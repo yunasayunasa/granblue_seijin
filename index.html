@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>タイムライン構築ミステリ：消えた青いクッキー</title>
+    <title>タイムライン構築ミステリ：消えた黄金メロンパン</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
-            --bg-color: #f0f2f5;
+            --bg-color: #fdfaf6; /* 明るく暖かい背景 */
             --container-bg: #ffffff;
-            --timeline-bg: #e4e6eb;
+            --timeline-bg: #fff0db; /* パンのような色 */
             --card-bg: #ffffff;
-            --text-color: #333;
-            --title-color: #1a73e8;
+            --text-color: #5d4037; /* ブラウン系の文字色 */
+            --card-text-color: #5d4037;
+            --title-color: #ff9800; /* オレンジ系のタイトル */
             --shadow-color: rgba(0, 0, 0, 0.1);
         }
         body {
@@ -46,36 +47,37 @@
             min-height: 50px; display: flex; flex-wrap: wrap; gap: 10px;
         }
         .card {
-            background-color: var(--card-bg); border: 1px solid #ccc; border-radius: 8px;
+            background-color: var(--card-bg); border: 1px solid #d7ccc8; border-radius: 8px;
             padding: 10px; cursor: grab; box-shadow: 0 2px 4px var(--shadow-color);
+            color: var(--card-text-color);
         }
         .person-card { font-weight: bold; text-align: center; flex-grow: 1; }
         .testimony-card { width: 100%; font-size: 0.9em; }
         .timeline { display: flex; flex-direction: column; gap: 15px; }
         .timeline-slot {
-            background-color: var(--container-bg); border: 1px solid #ddd; border-radius: 8px;
+            background-color: var(--container-bg); border: 1px solid #bcaaa4; border-radius: 8px;
             padding: 15px; display: flex; gap: 15px; align-items: stretch;
         }
         .person-dropzone, .testimony-dropzone {
-            border: 2px dashed #ccc; border-radius: 8px; display: flex;
+            border: 2px dashed #bcaaa4; border-radius: 8px; display: flex;
             align-items: center; justify-content: center; transition: background-color 0.2s, border-color 0.2s;
         }
         .person-dropzone { width: 120px; min-height: 50px; flex-shrink: 0; }
         .testimony-dropzone { flex-grow: 1; min-height: 80px; }
-        .sortable-ghost { opacity: 0.4; background: #cce5ff; }
+        .sortable-ghost { opacity: 0.4; background: #ffe0b2; }
         .sortable-chosen { box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); transform: scale(1.05); }
         .button-container { text-align: center; margin-top: 30px; }
         #check-answer-btn {
             background-color: var(--title-color); color: white; border: none; padding: 12px 30px;
             font-size: 1.1em; border-radius: 8px; cursor: pointer; transition: background-color 0.3s;
         }
-        #check-answer-btn:hover { background-color: #155ab3; }
+        #check-answer-btn:hover { background-color: #f57c00; }
         #result-area {
             margin-top: 20px; padding: 15px; border-radius: 8px;
             line-height: 1.8; white-space: pre-wrap;
         }
-        .correct { background-color: #d4edda; color: #155724; }
-        .incorrect { background-color: #f8d7da; color: #721c24; }
+        .correct { background-color: #c8e6c9; color: #2e7d32; }
+        .incorrect { background-color: #ffcdd2; color: #c62828; }
         
         @media (max-width: 600px) {
             body { padding: 5px; }
@@ -88,10 +90,9 @@
 <body>
 
 <div class="game-container">
-    <h1>消えた青いクッキー</h1>
-    <p>研究室から貴重な「青いクッキー」が一つだけ消えた。下の【未整理カード置き場】からカードをドラッグし、【タイムライン】で正しい組み合わせと順番を完成させよう。</p>
+    <h1>消えた黄金メロンパン</h1>
+    <p>カフェミレニアの開店準備中、焼き上がったばかりの「黄金メロンパン」が一つだけ消えた。6つの証言のうち、1つは嘘。5つの真実をタイムラインに並べ、メロンパンの行方を突き止めよう！</p>
 
-    <!-- ★★★ ここからレイアウトを全面的に改修 ★★★ -->
     <div class="area-title">未整理カード置き場</div>
     <div id="unsorted-container">
         <p style="font-size: 0.9em; margin: 0 0 10px 0;"><strong>人物</strong></p>
@@ -99,7 +100,6 @@
         <p style="font-size: 0.9em; margin: 15px 0 10px 0;"><strong>証言</strong></p>
         <div id="testimony-unsorted-area" class="card-pool"></div>
     </div>
-    <!-- ★★★ ここまでが新しい未整理カード置き場 ★★★ -->
     
     <div class="area-title">タイムライン</div>
     <div id="timeline-area" class="timeline"></div>
@@ -112,15 +112,27 @@
 </div>
 
 <script>
-    const data = [
-        { id: 'akari', name: 'カリオストロ ', text: 'クラリスが来る直前に気づいたんだ。俺様の研究成果であるクッキーが一つだけ…。食べると体が青く光るという特殊な効果があるってのに。', order: 4 },
-        { id: 'kaito', name: 'クラリス', text: '師匠、すごい剣幕だったよ。「クッキーがない！」って。ウチがおやつの催促に行ったばかりに…。', order: 3 },
-        { id: 'hinata', name: 'タルトマン', text: '私は一番最初に見学させてもらったのだ！テーブルの上にあった青いクッキー、キラキラしてて宝石みたいだったね、まぁ私のほうがおいしいがね！', order: 1 },
-        { id: 'yuuki', name: 'モブおじ', text: '私の巡回記録によれば、研究室の前を通った時、特に異常はありませんでした。ドアも施錠されていましたし。タルトマンさんの見学の後のことです。', order: 2 },
-        { id: 'mio', name: 'カタリナ', text: '一日の終わりに掃除をしていたら、研究室のゴミ箱に小さな銀紙が。他のゴミとは違う、お菓子の包み紙だったな。床は綺麗だったよ。', order: 5 }
+    const persons = [
+        { id: 'master', name: 'マスター・サンダルフォン' },
+        { id: 'akane', name: 'お手伝い・ルリア' },
+        { id: 'isao', name: '常連・イーウィヤ' },
+        { id: 'fumi', name: '常連・ガレヲン' },
+        { id: 'souta', name: '配達員・タルトマン' },
     ];
 
-  // ★★★ カードを配置する場所の変数を変更 ★★★
+    const testimonies = [
+        // 本物の証言 (5つ)
+        { id: 'master', text: '朝7時にメロンパンが焼き上がったんだ。粗熱を取るために、陳列棚のトレーに5つ並べておいた。間違いなくな。', order: 1, isReal: true },
+        { id: 'akane', text: '7時半にお手伝いに来たら、甘い匂いが充満してました！サンダルフォンさんは奥でコーヒーの焙煎をしていて、私は床の掃き掃除を始めたんです！', order: 2, isReal: true },
+        { id: 'souta', text: '颯爽と店の正面から入って、タルト用の小麦粉の袋を納品したのだ！ちょうど7時45分頃の話だな。婦女子が掃除をしていたが、あろうことかあの優男、小麦粉でパンを練っていたのだ！', order: 3, isReal: true },
+        { id: 'fumi', text: '散歩。「イーウィヤと散歩の途中で店の前を通ったら、扉が少しだけ開いていました。中から愛しい猫が出てきたのです。あらあら、と思って見ていました。」', order: 4, isReal: true },
+        { id: 'isao', text: 'ガレヲンが「猫がいる」と言うので、ウィヤを差し置いて何事じゃ！と見てみたら、口に何か黄色いものをくわえておったのじゃ。まさかとは思うが…知り合いのタマにそっくりじゃったのぉ。', order: 5, isReal: true },
+        
+        // 偽の証言 (1つ)
+        { id: 'fake1', text: '開店前の見回りをしたけど、扉は閉まってたし、不審な点はなかったよ。店の周りに動物の足跡もなかったな。', order: null, isReal: false },
+    ];
+
+    // 以下、スクリプトのロジックは前回と同じなので変更なし
     const personUnsortedArea = document.getElementById('person-unsorted-area');
     const testimonyUnsortedArea = document.getElementById('testimony-unsorted-area');
     const timelineArea = document.getElementById('timeline-area');
@@ -129,41 +141,66 @@
 
     function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
-    // カードを新しい未整理エリアに生成
-    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `person-${item.id}`; card.className = 'card person-card'; card.textContent = item.name; personUnsortedArea.appendChild(card); });
-    shuffle([...data]).forEach(item => { const card = document.createElement('div'); card.id = `testimony-${item.id}`; card.className = 'card testimony-card'; card.textContent = `「${item.text}」`; testimonyUnsortedArea.appendChild(card); });
+    shuffle([...persons]).forEach(item => { const card = document.createElement('div'); card.id = `person-${item.id}`; card.className = 'card person-card'; card.textContent = item.name; personUnsortedArea.appendChild(card); });
+    shuffle([...testimonies]).forEach(item => { const card = document.createElement('div'); card.id = `testimony-${item.id}`; card.className = 'card testimony-card'; card.textContent = `「${item.text}」`; testimonyUnsortedArea.appendChild(card); });
 
-    for (let i = 1; i <= data.length; i++) { const slot = document.createElement('div'); slot.className = 'timeline-slot'; slot.dataset.order = i; slot.innerHTML = `<div class="person-dropzone" data-type="person"></div><div class="testimony-dropzone" data-type="testimony"></div>`; timelineArea.appendChild(slot); }
+    for (let i = 1; i <= 5; i++) { const slot = document.createElement('div'); slot.className = 'timeline-slot'; slot.dataset.order = i; slot.innerHTML = `<div class="person-dropzone" data-type="person"></div><div class="testimony-dropzone" data-type="testimony"></div>`; timelineArea.appendChild(slot); }
 
-    // ★★★ SortableJSの設定を新しいレイアウトに合わせる ★★★
-    // 人物カードのグループ
     const personOptions = { group: 'persons', animation: 150 };
     new Sortable(personUnsortedArea, personOptions);
     document.querySelectorAll('.person-dropzone').forEach(zone => new Sortable(zone, personOptions));
 
-    // 証言カードのグループ
     const testimonyOptions = { group: 'testimonies', animation: 150 };
     new Sortable(testimonyUnsortedArea, testimonyOptions);
     document.querySelectorAll('.testimony-dropzone').forEach(zone => new Sortable(zone, testimonyOptions));
 
-    // 判定ボタンの処理 (変更なし)
     checkBtn.addEventListener('click', () => {
         let isCorrect = true;
-        let isComplete = true;
+        let timelineIsFull = true;
+
         document.querySelectorAll('.timeline-slot').forEach(slot => {
             const order = parseInt(slot.dataset.order);
             const personCard = slot.querySelector('.person-card');
             const testimonyCard = slot.querySelector('.testimony-card');
-            if (!personCard || !testimonyCard) { isComplete = false; return; }
+
+            if (!personCard || !testimonyCard) {
+                timelineIsFull = false;
+                return;
+            }
+
             const personId = personCard.id.replace('person-', '');
             const testimonyId = testimonyCard.id.replace('testimony-', '');
-            const correctItem = data.find(item => item.order === order);
-            if (personId !== correctItem.id || testimonyId !== correctItem.id) { isCorrect = false; }
+            
+            const correctTestimony = testimonies.find(t => t.order === order && t.isReal);
+
+            if (!correctTestimony || personId !== correctTestimony.id || testimonyId !== correctTestimony.id) {
+                isCorrect = false;
+            }
         });
 
-        if (!isComplete) { resultArea.className = 'incorrect'; resultArea.innerHTML = 'まだ全てのカードがタイムラインに置かれていないようだ…'; }
-        else if (isCorrect) { resultArea.className = 'correct'; resultArea.innerHTML = `【タイムライン完成！】\n\n一連の出来事は、こうだ。\n\n1.【タルトマン】「一番最初に見学した」という証言。\n2.【モブおじ】「タルトさんの見学の後」に巡回。\n3.【クラリス】「おやつの催促に行った」ら事件発覚。\n4.【カリオストロ】「俺様の弟子が来る直前に気づいた」と証言。クラリスの直前の出来事。\n5.【カタリナ】「一日の終わりに掃除」中に犯人の痕跡を発見。\n\n【真相】\n犯人は……タルトマンだ。\n彼？は「キラキラしてて宝石みたい、だが私の方が美味い」という理由で、食べるためではなく嫉妬でクッキーを盗んだ。だから体が光ることはなかった。\n慌てていたため、持っていた別のお菓子のゴミ（銀紙）を研究室のゴミ箱に捨ててしまったのが、決定的な証拠となった。`; }
-        else { resultArea.className = 'incorrect'; resultArea.innerHTML = 'うーん、人物、証言、時系列のどこかに矛盾があるようだ。もう一度よく考えてみよう。'; }
+        if (!timelineIsFull) {
+            resultArea.className = 'incorrect';
+            resultArea.innerHTML = 'まだタイムラインが完成していないようだ…';
+        } else if (isCorrect) {
+            resultArea.className = 'correct';
+            resultArea.innerHTML = `【お見事！事件は解決だ！】
+            
+            一連の出来事は、こうだ。
+
+            1.【サンダルフォン】7:00、メロンパンを焼き上げ、陳列棚に置く。
+            2.【ルリア】7:30、出勤。サンダルフォンは奥へ。ルリアは掃き掃除を開始。
+            3.【タルトマン】7:45、小麦粉を納品。この時、まだ事件は起きていない。
+            4.【がレヲン】散歩中、少し開いた扉から猫が出てくるのを目撃。
+            5.【イーウィヤ】その猫が黄色いもの（メロンパン）をくわえているのを目撃。
+
+            【真相】
+            犯人は……イーウィヤの知り合いの猫『タマ』だった！
+            タルトマンが使った正面入り口、あるいは少し開いていた扉から忍び込み、甘い匂いに誘われてメロンパンを一つくわえて出ていったのだ。
+            これは盗難事件ではなく、食いしん坊な猫が起こした、微笑ましいハプニングだったのである。`;
+        } else {
+            resultArea.className = 'incorrect';
+            resultArea.innerHTML = 'タイムラインに矛盾がある。あるいは、誰かが嘘をついているのかもしれない…。';
+        }
     });
 </script>
 </body>
