@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>バレンタインミステリ：交錯するハートチョコ</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdfaf6;
+            --container-bg: #fffbf0;
+            --pink: #d81b60;
+            --brown: #5d4037;
+            --light-pink: #fce4ec;
+            --light-brown: #efebe9;
+            --accent-gold: #c5a059;
+            --text-color: #3e2723;
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Shippori Mincho', serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#e6ce9e 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            overscroll-behavior: none;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            border: 2px solid var(--accent-gold);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            position: relative;
+        }
+
+        .game-container::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid #e6ce9e;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        h1 {
+            color: var(--pink);
+            text-align: center;
+            border-bottom: 3px double var(--accent-gold);
+            padding-bottom: 10px;
+            font-size: 1.8em;
+            letter-spacing: 0.1em;
+            margin: 10px 0 20px 0;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 8px 16px;
+            background: var(--accent-gold);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: #b8943d;
+            transform: translateY(-2px);
+        }
+
+        .story-text {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.95em;
+            padding: 0 20px;
+        }
+
+        .notice-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .notice-box strong {
+            color: #d81b60;
+        }
+
+        .area-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 6px solid var(--pink);
+            color: var(--pink);
+            background: linear-gradient(90deg, rgba(216, 27, 96, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+
+        .instruction-text {
+            font-size: 0.85em;
+            color: #795548;
+            margin-bottom: 10px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        /* タブ UI */
+        .tab-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 0;
+            border-bottom: 2px solid var(--accent-gold);
+            padding-left: 10px;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border: 1px solid #e6ce9e;
+            border-bottom: none;
+            cursor: pointer;
+            font-family: inherit;
+            color: var(--text-color);
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background-color: var(--container-bg);
+            border-color: var(--accent-gold);
+            border-bottom: 2px solid var(--container-bg);
+            color: var(--pink);
+            transform: translateY(2px);
+        }
+
+        .card-pool-container {
+            background-color: rgba(255, 255, 255, 0.6);
+            border: 1px solid #e6ce9e;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            min-height: 100px;
+            margin-bottom: 20px;
+        }
+
+        .pool-section {
+            display: none;
+            padding: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .pool-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-pool {
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* カード */
+        .card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            cursor: grab;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            font-size: 0.95em;
+            position: relative;
+            touch-action: none;
+            user-select: none;
+            transition: background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+
+        .card.selected {
+            background-color: #fff8e1;
+            border: 2px solid var(--pink);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(216, 27, 96, 0.2);
+            z-index: 10;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #fff9c4 !important;
+            border: 2px dashed #fbc02d !important;
+        }
+
+        .sortable-drag {
+            cursor: grabbing;
+            opacity: 1;
+            background-color: #ffffff;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transform: scale(1.05) rotate(2deg);
+            border: 2px solid var(--accent-gold);
+        }
+
+        .person-card {
+            border-left: 5px solid var(--pink);
+            min-width: 100px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .testimony-card {
+            border-left: 5px solid var(--brown);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .evidence-card {
+            border-left: 5px solid var(--accent-gold);
+            min-width: 120px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #fffcf5;
+        }
+
+        /* タイムライン */
+        .timeline-section {
+            margin-bottom: 30px;
+        }
+
+        .timeline-header {
+            font-size: 1.1em;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 8px 8px 0 0;
+            color: white;
+            text-align: center;
+        }
+
+        .timeline-header.pink {
+            background: linear-gradient(135deg, var(--pink) 0%, #c2185b 100%);
+        }
+
+        .timeline-header.brown {
+            background: linear-gradient(135deg, var(--brown) 0%, #4e342e 100%);
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 0 0 8px 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .timeline-slot {
+            background-color: #fff;
+            border: 1px solid #e6ce9e;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 80px 140px 1fr 160px;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            position: relative;
+        }
+
+        .time-label {
+            font-weight: bold;
+            color: var(--pink);
+            text-align: center;
+            font-size: 1.1em;
+            z-index: 1;
+            background: #fff;
+            padding: 5px;
+            border: 1px solid #e6ce9e;
+            border-radius: 4px;
+        }
+
+        .dropzone {
+            min-height: 70px;
+            background-color: #fafafa;
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 1;
+        }
+
+        .dropzone.highlight-target {
+            background-color: #ffe8f0;
+            border-color: var(--pink);
+            cursor: pointer;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        #check-answer-btn {
+            background-color: var(--pink);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(216, 27, 96, 0.4);
+            transition: all 0.3s;
+        }
+
+        #check-answer-btn:hover {
+            background-color: #c2185b;
+            transform: translateY(-2px);
+        }
+
+        #result-area {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        .correct {
+            background-color: #f1f8e9;
+            border: 1px solid #8bc34a;
+            color: #2e7d32;
+        }
+
+        .incorrect {
+            background-color: #ffebee;
+            border: 1px solid #ef9a9a;
+            color: #c62828;
+        }
+
+        @media (max-width: 800px) {
+            body {
+                padding: 5px;
+            }
+
+            .game-container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .timeline-slot {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+                gap: 8px;
+                padding-bottom: 20px;
+                margin-bottom: 15px;
+            }
+
+            .time-label {
+                text-align: left;
+                width: fit-content;
+                margin-bottom: 5px;
+            }
+
+            .dropzone {
+                min-height: 60px;
+            }
+
+            .testimony-card {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <button class="back-button" onclick="location.href='index.html'">← タイトルへ</button>
+
+        <h1>交錯するハートチョコ</h1>
+
+        <div class="story-text">
+            <p>バレンタイン前後、カフェと工房で2つの事件が発生した。<br>
+                カフェでは<b>ハートチョコが消え</b>、工房では<b>ハートチョコが出現</b>した。<br>
+                一見関連するように見えるが……真実は？</p>
+        </div>
+
+        <div class="notice-box">
+            <strong>重要：</strong>同じ人物は2つのタイムラインに同時に登場できません。各人物カードは1回のみ使用可能です。
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="switchTab('person')">人物</button>
+            <button class="tab-btn" onclick="switchTab('testimony')">証言</button>
+            <button class="tab-btn" onclick="switchTab('evidence')">証拠品</button>
+        </div>
+
+        <div class="card-pool-container">
+            <div id="pool-person" class="pool-section active">
+                <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+                <div id="person-unsorted-area" class="card-pool" data-type="person"></div>
+            </div>
+
+            <div id="pool-testimony" class="pool-section">
+                <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+                <div id="testimony-unsorted-area" class="card-pool" data-type="testimony"></div>
+            </div>
+
+            <div id="pool-evidence" class="pool-section">
+                <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+                <div id="evidence-unsorted-area" class="card-pool" data-type="evidence"></div>
+            </div>
+        </div>
+
+        <div class="timeline-section">
+            <div class="area-title">タイムラインA（カフェ）</div>
+            <div class="timeline-header pink">消えたハートチョコ事件</div>
+            <div id="timeline-a" class="timeline"></div>
+        </div>
+
+        <div class="timeline-section">
+            <div class="area-title">タイムラインB（工房）</div>
+            <div class="timeline-header brown">出現したハートチョコ事件</div>
+            <div id="timeline-b" class="timeline"></div>
+        </div>
+
+        <div class="button-container">
+            <button id="check-answer-btn">推理する</button>
+        </div>
+        <div id="result-area"></div>
+    </div>
+
+    <script>
+        const timeSlotsA = ['09:00', '10:00', '11:00', '12:00', '13:00'];
+        const timeSlotsB = ['09:00', '10:00', '11:00', '12:00', '13:00'];
+
+        const persons = [
+            { id: 'sandalphon', name: 'サンダルフォン', type: 'person' },
+            { id: 'lyria', name: 'ルリア', type: 'person' },
+            { id: 'katarina', name: 'カタリナ', type: 'person' },
+            { id: 'roger', name: 'ロジャー', type: 'person' },
+            { id: 'rackam', name: 'ラカム', type: 'person' },
+            { id: 'sierokarte', name: 'シェロカルテ', type: 'person' },
+            { id: 'ruo', name: 'ルオー', type: 'person' },
+            { id: 'fediel', name: 'フェディエル', type: 'person' },
+            { id: 'vee', name: 'ビィ', type: 'person' },
+            { id: 'eugen', name: 'オイゲン', type: 'person' },
+            { id: 'tartman', name: 'タルトマン', type: 'person' },
+        ];
+
+        const correctAnswerA = [
+            { order: 1, time: '09:00', personId: 'sandalphon', testimonyId: 'a1', evidenceId: 'ea1' },
+            { order: 2, time: '10:00', personId: 'lyria', testimonyId: 'a2', evidenceId: 'ea2' },
+            { order: 3, time: '11:00', personId: 'katarina', testimonyId: 'a3', evidenceId: 'ea3' },
+            { order: 4, time: '12:00', personId: 'roger', testimonyId: 'a4', evidenceId: 'ea4' },
+            { order: 5, time: '13:00', personId: 'rackam', testimonyId: 'a5', evidenceId: 'ea5' },
+        ];
+
+        const correctAnswerB = [
+            { order: 1, time: '09:00', personId: 'sierokarte', testimonyId: 'b1', evidenceId: 'eb1' },
+            { order: 2, time: '10:00', personId: 'ruo', testimonyId: 'b2', evidenceId: 'eb2' },
+            { order: 3, time: '11:00', personId: 'fediel', testimonyId: 'b3', evidenceId: 'eb3' },
+            { order: 4, time: '12:00', personId: 'vee', testimonyId: 'b4', evidenceId: 'eb4' },
+            { order: 5, time: '13:00', personId: 'eugen', testimonyId: 'b5', evidenceId: 'eb5' },
+        ];
+
+        const testimonies = [
+            // タイムラインA
+            { id: 'a1', text: '朝一番で特製ハートチョコを作り始めたんだ。明日はバレンタインだからな。完璧な仕上がりにしたい。', type: 'testimony' },
+            { id: 'a2', text: 'カウンターに綺麗なハートチョコが5つ並んでました！サンダルフォンさんが『お客様用に』って言ってたので、来店された常連さんにお配りしました！', type: 'testimony' },
+            { id: 'a3', text: 'ルリアがチョコを配っているのを手伝ったよ。常連の皆さんがとても喜んでくれて、良かった。', type: 'testimony' },
+            { id: 'a4', text: '今朝カフェでハートチョコ見たよ！すっごい綺麗だった！徹夜明けで頭ぼーっとしてたけど、あれは間違いない！', type: 'testimony' },
+            { id: 'a5', text: '昼にカフェへ寄ったら、サンダルフォンが試作チョコがなくなって困ってるって言ってたぜ。どこ行ったんだろうな？', type: 'testimony' },
+            // タイムラインB
+            { id: 'b1', text: '今日はバレンタインですね～！朝一番で工房を確認しましたが、特に変わったことはありませんでした～。', type: 'testimony' },
+            { id: 'b2', text: '…こっそり置いてきたのだよ。空の民ではサプライズというのも好まれるのだろう？', type: 'testimony' },
+            { id: 'b3', text: '昼頃、工房の前を通ったらシェロカルテがチョコを発見して大騒ぎしていたぞ。誰かのサプライズか？', type: 'testimony' },
+            { id: 'b4', text: 'おいらも工房に行ったけど、不思議なチョコの話で持ちきりだったぜ。誰が作ったんだろうな？', type: 'testimony' },
+            { id: 'b5', text: '工房でハートチョコが見つかったって聞いたが、カフェの方でも何かあったらしいな。何か関係があるのかもしれん。', type: 'testimony' },
+            // 嘘つき
+            { id: 'ta_false', text: 'フン、私が午後にカフェへ立ち寄った時、チョコは工房へ運ばれていったと聞いたぞ。シェロカルテが持っていったらしいな！', type: 'testimony' },
+            { id: 'tb_false', text: '工房のチョコはカフェから運ばれてきたものだ。間違いない。私がこの目で見たからな！', type: 'testimony' },
+        ];
+
+        const evidences = [
+            // タイムラインA
+            { id: 'ea1', text: '調理中のチョコレート', type: 'evidence' },
+            { id: 'ea2', text: 'カウンターの5つのハートチョコ', type: 'evidence' },
+            { id: 'ea3', text: '常連客の笑顔', type: 'evidence' },
+            { id: 'ea4', text: '空になったチョコトレー', type: 'evidence' },
+            { id: 'ea5', text: '日めくりカレンダー【2月13日】', type: 'evidence' },
+            // タイムラインB
+            { id: 'eb1', text: 'シェロの工房（いつも通りの朝）', type: 'evidence' },
+            { id: 'eb2', text: 'ルオーの足跡', type: 'evidence' },
+            { id: 'eb3', text: '作業台の5つのハートチョコ', type: 'evidence' },
+            { id: 'eb4', text: '驚くシェロカルテ', type: 'evidence' },
+            { id: 'eb5', text: '日めくりカレンダー【2月14日】', type: 'evidence' },
+            // ダミー
+            { id: 'e_dummy', text: 'カフェから工房への配送伝票', type: 'evidence' },
+        ];
+
+        const personUnsortedArea = document.getElementById('person-unsorted-area');
+        const testimonyUnsortedArea = document.getElementById('testimony-unsorted-area');
+        const evidenceUnsortedArea = document.getElementById('evidence-unsorted-area');
+        const timelineAArea = document.getElementById('timeline-a');
+        const timelineBArea = document.getElementById('timeline-b');
+        const checkBtn = document.getElementById('check-answer-btn');
+        const resultArea = document.getElementById('result-area');
+        let selectedCard = null;
+
+        window.switchTab = function (type) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+            document.querySelectorAll('.pool-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`pool-${type}`).classList.add('active');
+            deselect();
+        };
+
+        function init() {
+            shuffle([...persons]).forEach(p => createCard(p.name, `person-${p.id}`, 'person-card', personUnsortedArea, 'person'));
+            shuffle([...testimonies]).forEach(t => createCard(t.text, `testimony-${t.id}`, 'testimony-card', testimonyUnsortedArea, 'testimony'));
+            shuffle([...evidences]).forEach(e => createCard(e.text, `evidence-${e.id}`, 'evidence-card', evidenceUnsortedArea, 'evidence'));
+
+            timeSlotsA.forEach((time, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'timeline-slot';
+                slot.dataset.timeline = 'A';
+                slot.dataset.order = index + 1;
+                slot.innerHTML = `
+                <div class="time-label">${time}</div>
+                <div class="dropzone person-dropzone" data-type="person"></div>
+                <div class="dropzone testimony-dropzone" data-type="testimony"></div>
+                <div class="dropzone evidence-dropzone" data-type="evidence"></div>
+            `;
+                timelineAArea.appendChild(slot);
+            });
+
+            timeSlotsB.forEach((time, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'timeline-slot';
+                slot.dataset.timeline = 'B';
+                slot.dataset.order = index + 1;
+                slot.innerHTML = `
+                <div class="time-label">${time}</div>
+                <div class="dropzone person-dropzone" data-type="person"></div>
+                <div class="dropzone testimony-dropzone" data-type="testimony"></div>
+                <div class="dropzone evidence-dropzone" data-type="evidence"></div>
+            `;
+                timelineBArea.appendChild(slot);
+            });
+
+            document.querySelectorAll('.dropzone, .card-pool').forEach(zone => {
+                zone.addEventListener('click', (e) => {
+                    if (selectedCard) {
+                        const zoneType = zone.dataset.type;
+                        const cardType = selectedCard.dataset.type;
+                        if (zoneType === cardType) {
+                            tryMoveCard(selectedCard, zone);
+                            e.stopPropagation();
+                        }
+                    }
+                });
+            });
+
+            setupSortable(personUnsortedArea, '.person-dropzone', 'persons');
+            setupSortable(testimonyUnsortedArea, '.testimony-dropzone', 'testimonies');
+            setupSortable(evidenceUnsortedArea, '.evidence-dropzone', 'evidences');
+        }
+
+        function createCard(text, id, className, parent, type) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.id = id;
+            div.className = `card ${className}`;
+            div.dataset.type = type;
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (div === selectedCard) {
+                    deselect();
+                } else {
+                    selectCard(div);
+                }
+            });
+            parent.appendChild(div);
+        }
+
+        function selectCard(card) {
+            deselect();
+            selectedCard = card;
+            selectedCard.classList.add('selected');
+            document.querySelectorAll(`.dropzone[data-type="${card.dataset.type}"]`).forEach(el => el.classList.add('highlight-target'));
+        }
+
+        function deselect() {
+            if (selectedCard) selectedCard.classList.remove('selected');
+            selectedCard = null;
+            document.querySelectorAll('.highlight-target').forEach(el => el.classList.remove('highlight-target'));
+        }
+
+        function tryMoveCard(card, targetZone) {
+            if (targetZone.children.length > 0 && !targetZone.classList.contains('card-pool')) {
+                const existing = targetZone.children[0];
+                const pool = document.getElementById(`${existing.dataset.type}-unsorted-area`);
+                if (pool) pool.appendChild(existing);
+            }
+            targetZone.appendChild(card);
+            deselect();
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function setupSortable(sourceEl, targetSelector, groupName) {
+            const options = {
+                group: groupName,
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                delay: 100,
+                delayOnTouchOnly: true,
+                forceFallback: true,
+                fallbackOnBody: true,
+                onStart: function () { deselect(); }
+            };
+            new Sortable(sourceEl, options);
+            document.querySelectorAll(targetSelector).forEach(el => {
+                new Sortable(el, options);
+            });
+        }
+
+        checkBtn.addEventListener('click', () => {
+            let isCorrect = true;
+            let filledCountA = 0;
+            let filledCountB = 0;
+            let feedback = [];
+            const usedPersons = new Set();
+
+            // タイムラインA判定
+            document.querySelectorAll('#timeline-a .timeline-slot').forEach((slot, index) => {
+                const order = parseInt(slot.dataset.order);
+                const correctData = correctAnswerA.find(c => c.order === order);
+                if (!correctData) return;
+
+                const personCard = slot.querySelector('.person-card');
+                const testimonyCard = slot.querySelector('.testimony-card');
+                const evidenceCard = slot.querySelector('.evidence-card');
+
+                if (!personCard || !testimonyCard || !evidenceCard) { return; }
+                filledCountA++;
+
+                const pId = personCard.id.replace('person-', '');
+                const tId = testimonyCard.id.replace('testimony-', '');
+                const eId = evidenceCard.id.replace('evidence-', '');
+
+                if (usedPersons.has(pId)) {
+                    feedback.push('・同じ人物が2つのタイムラインに登場しています。');
+                    isCorrect = false;
+                }
+                usedPersons.add(pId);
+
+                if (pId !== correctData.personId || tId !== correctData.testimonyId || eId !== correctData.evidenceId) {
+                    isCorrect = false;
+                    if (tId === 'ta_false' || tId === 'tb_false') {
+                        feedback.push(`・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？`);
+                    }
+                }
+            });
+
+            // タイムラインB判定
+            document.querySelectorAll('#timeline-b .timeline-slot').forEach((slot, index) => {
+                const order = parseInt(slot.dataset.order);
+                const correctData = correctAnswerB.find(c => c.order === order);
+                if (!correctData) return;
+
+                const personCard = slot.querySelector('.person-card');
+                const testimonyCard = slot.querySelector('.testimony-card');
+                const evidenceCard = slot.querySelector('.evidence-card');
+
+                if (!personCard || !testimonyCard || !evidenceCard) { return; }
+                filledCountB++;
+
+                const pId = personCard.id.replace('person-', '');
+                const tId = testimonyCard.id.replace('testimony-', '');
+                const eId = evidenceCard.id.replace('evidence-', '');
+
+                if (usedPersons.has(pId)) {
+                    if (!feedback.includes('・同じ人物が2つのタイムラインに登場しています。')) {
+                        feedback.push('・同じ人物が2つのタイムラインに登場しています。');
+                    }
+                    isCorrect = false;
+                }
+                usedPersons.add(pId);
+
+                if (pId !== correctData.personId || tId !== correctData.testimonyId || eId !== correctData.evidenceId) {
+                    isCorrect = false;
+                    if (tId === 'ta_false' || tId === 'tb_false') {
+                        if (!feedback.includes('・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？')) {
+                            feedback.push(`・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？`);
+                        }
+                    }
+                }
+            });
+
+            resultArea.style.display = 'block';
+
+            if (filledCountA < 5 || filledCountB < 5) {
+                resultArea.className = 'incorrect';
+                resultArea.textContent = '両方のタイムラインをすべて埋めてください。';
+            } else if (isCorrect) {
+                resultArea.className = 'correct';
+                resultArea.innerHTML = `
+                <h3>【見事な推理です！】</h3>
+                <p>真実はこうでした。</p>
+                <p>
+                <b>■タイムラインA（カフェ・2月13日）</b><br>
+                09:00 サンダルフォンがチョコ制作開始（「<b>明日は</b>バレンタイン」と発言）<br>
+                10:00 ルリアが勘違いで配布<br>
+                11:00 カタリナが配布を手伝う<br>
+                12:00 ロジャーが曖昧な証言<br>
+                13:00 ラカムが消失を報告（<b>カレンダー：13日</b>）<br>
+                <br>
+                <b>■タイムラインB（工房・2月14日）</b><br>
+                09:00 シェロカルテが確認（「<b>今日は</b>バレンタイン」と発言）<br>
+                10:00 ルオーが密かに配置<br>
+                11:00 フェディエルが大騒ぎを目撃<br>
+                12:00 ビィが不思議なチョコの話を聞く<br>
+                13:00 オイゲンが関連性を示唆（<b>カレンダー：14日</b>）<br>
+                </p>
+                <p><b>結論：</b><br>
+                カフェのチョコ → ルリア＆カタリナが常連客に配布済み（2月13日）<br>
+                工房のチョコ → ルオーのサプライズ（2月14日）<br>
+                <b>2つは全く別の事件で、1日ズレていた！</b></p>
+            `;
+            } else {
+                resultArea.className = 'incorrect';
+                let msg = '推理に誤りがあります。\n';
+                if (feedback.length > 0) {
+                    msg += '\n【ヒント】\n' + feedback.join('\n');
+                } else {
+                    msg += '\n2つのタイムラインの日付に注目してください。「明日は」と「今日は」の違い、カレンダーの日付が鍵です。\n時間が前後しているか、証拠品と証言が噛み合っていません。';
+                }
+                resultArea.innerText = msg;
+            }
+        });
+
+        init();
+    </script>
+
+</body>
+
+</html>
