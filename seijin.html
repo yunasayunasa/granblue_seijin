@@ -590,6 +590,8 @@
         });
 
         function showHints() {
+            clearHints(); // Reset all hints first ensuring clean state
+
             const slots = document.querySelectorAll('.timeline-slot');
 
             slots.forEach((slot) => {
@@ -752,6 +754,7 @@
 
             targetZone.appendChild(card);
             deselect();
+            if (typeof hintActive !== 'undefined' && hintActive) showHints();
         }
 
 
@@ -773,7 +776,8 @@
                 delayOnTouchOnly: true,
                 forceFallback: true, // ブラウザのDnDでなくJS制御にする（スマホで安定）
                 fallbackOnBody: true, // bodyに追加して枠外移動をスムーズに
-                onStart: function () { deselect(); } // ドラッグ開始したら選択解除
+                onStart: function () { deselect(); }, // ドラッグ開始したら選択解除
+                onEnd: function () { if (typeof hintActive !== 'undefined' && hintActive) showHints(); }
             };
             new Sortable(sourceEl, options);
             document.querySelectorAll(targetSelector).forEach(el => {

@@ -647,6 +647,8 @@
         });
 
         function showHints() {
+            clearHints(); // Reset all hints first ensuring clean state
+
             // Timeline A
             document.querySelectorAll('#timeline-a .timeline-slot').forEach((slot, index) => {
                 const order = parseInt(slot.dataset.order);
@@ -851,6 +853,7 @@
             }
             targetZone.appendChild(card);
             deselect();
+            if (typeof hintActive !== 'undefined' && hintActive) showHints();
         }
 
         function shuffle(array) {
@@ -871,7 +874,8 @@
                 delayOnTouchOnly: true,
                 forceFallback: true,
                 fallbackOnBody: true,
-                onStart: function () { deselect(); }
+                onStart: function () { deselect(); },
+                onEnd: function () { if (typeof hintActive !== 'undefined' && hintActive) showHints(); }
             };
             new Sortable(sourceEl, options);
             document.querySelectorAll(targetSelector).forEach(el => {
