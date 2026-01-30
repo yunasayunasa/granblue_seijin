@@ -332,6 +332,86 @@
         .button-container {
             text-align: center;
             margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .hint-btn {
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+            transition: all 0.3s;
+        }
+
+        .hint-btn:hover {
+            background-color: #ffb300;
+            transform: translateY(-2px);
+        }
+
+        .hint-btn.active {
+            background-color: #ff9800;
+        }
+
+        /* Hint slot highlighting */
+        .timeline-slot.hint-correct {
+            border: 3px solid #2196f3 !important;
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+            animation: pulse-blue 1.5s infinite;
+        }
+
+        .timeline-slot.hint-incorrect {
+            border: 3px solid #f44336 !important;
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .timeline-slot.hint-empty {
+            border: 3px solid #ffc107 !important;
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+            animation: pulse-yellow 1.5s infinite;
+        }
+
+        @keyframes pulse-blue {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(33, 150, 243, 0.8);
+            }
+        }
+
+        @keyframes pulse-red {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(244, 67, 54, 0.8);
+            }
+        }
+
+        @keyframes pulse-yellow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(255, 193, 7, 0.8);
+            }
         }
 
         #check-answer-btn {
@@ -463,6 +543,7 @@
         </div>
 
         <div class="button-container">
+            <button id="hint-btn" class="hint-btn">ヒントを見る</button>
             <button id="check-answer-btn">推理する</button>
         </div>
         <div id="result-area"></div>
@@ -505,16 +586,16 @@
         const testimonies = [
             // タイムラインA
             { id: 'a1', text: '朝一番で特製ハートチョコを作り始めたんだ。明日はバレンタインだからな。完璧な仕上がりにしたい。', type: 'testimony' },
-            { id: 'a2', text: 'カウンターに綺麗なハートチョコが5つ並んでました！サンダルフォンさんが『お客様用に』って言ってたので、来店された常連さんにお配りしました！', type: 'testimony' },
-            { id: 'a3', text: 'ルリアがチョコを配っているのを手伝ったよ。常連の皆さんがとても喜んでくれて、良かった。', type: 'testimony' },
-            { id: 'a4', text: '今朝カフェでハートチョコ見たよ！すっごい綺麗だった！徹夜明けで頭ぼーっとしてたけど、あれは間違いない！', type: 'testimony' },
-            { id: 'a5', text: '昼にカフェへ寄ったら、サンダルフォンが試作チョコがなくなって困ってるって言ってたぜ。どこ行ったんだろうな？', type: 'testimony' },
+            { id: 'a2', text: '10時頃、カウンターに綺麗なハートチョコが5つ並んでました！サンダルフォンさんが『お客様用に』って言ってたので、来店された常連さんにお配りしました！', type: 'testimony' },
+            { id: 'a3', text: '11時前に、ルリアがチョコを配っているのを手伝ったよ。常連の皆さんがとても喜んでくれて、良かった。', type: 'testimony' },
+            { id: 'a4', text: '昼頃、カフェでハートチョコ見たよ！すっごい綺麗だった！徹夜明けで頭ぼーっとしてたけど、あれは間違いない！', type: 'testimony' },
+            { id: 'a5', text: '午後1時頃、カフェへ寄ったら、サンダルフォンが試作チョコがなくなって困ってるって言ってたぜ。どこ行ったんだろうな？', type: 'testimony' },
             // タイムラインB
             { id: 'b1', text: '今日はバレンタインですね～！朝一番で工房を確認しましたが、特に変わったことはありませんでした～。', type: 'testimony' },
-            { id: 'b2', text: '…こっそり置いてきたのだよ。空の民ではサプライズというのも好まれるのだろう？', type: 'testimony' },
-            { id: 'b3', text: '昼頃、工房の前を通ったらシェロカルテがチョコを発見して大騒ぎしていたぞ。誰かのサプライズか？', type: 'testimony' },
-            { id: 'b4', text: 'おいらも工房に行ったけど、不思議なチョコの話で持ちきりだったぜ。誰が作ったんだろうな？', type: 'testimony' },
-            { id: 'b5', text: '工房でハートチョコが見つかったって聞いたが、カフェの方でも何かあったらしいな。何か関係があるのかもしれん。', type: 'testimony' },
+            { id: 'b2', text: '10時頃、…こっそり置いてきたのだよ。空の民ではサプライズというのも好まれるのだろう？', type: 'testimony' },
+            { id: 'b3', text: '11時頃、工房の前を通ったらシェロカルテがチョコを発見して大騒ぎしていたぞ。誰かのサプライズか？', type: 'testimony' },
+            { id: 'b4', text: '昼頃、おいらも工房に行ったけど、不思議なチョコの話で持ちきりだったぜ。誰が作ったんだろうな？', type: 'testimony' },
+            { id: 'b5', text: '午後1時過ぎ、工房でハートチョコが見つかったって聞いたが、カフェの方でも何かあったらしいな。何か関係があるのかもしれん。', type: 'testimony' },
             // 嘘つき
             { id: 'ta_false', text: 'フン、私が午後にカフェへ立ち寄った時、チョコは工房へ運ばれていったと聞いたぞ。シェロカルテが持っていったらしいな！', type: 'testimony' },
             { id: 'tb_false', text: '工房のチョコはカフェから運ばれてきたものだ。間違いない。私がこの目で見たからな！', type: 'testimony' },
@@ -543,8 +624,84 @@
         const timelineAArea = document.getElementById('timeline-a');
         const timelineBArea = document.getElementById('timeline-b');
         const checkBtn = document.getElementById('check-answer-btn');
+        const hintBtn = document.getElementById('hint-btn');
         const resultArea = document.getElementById('result-area');
         let selectedCard = null;
+        let hintActive = false;
+
+        hintBtn.addEventListener('click', () => {
+            hintActive = !hintActive;
+
+            if (hintActive) {
+                hintBtn.classList.add('active');
+                hintBtn.textContent = 'ヒントを消す';
+                showHints();
+            } else {
+                hintBtn.classList.remove('active');
+                hintBtn.textContent = 'ヒントを見る';
+                clearHints();
+            }
+        });
+
+        function showHints() {
+            // Timeline A
+            document.querySelectorAll('#timeline-a .timeline-slot').forEach((slot, index) => {
+                const order = parseInt(slot.dataset.order);
+                const correctData = correctAnswerA.find(c => c.order === order);
+                if (!correctData) return;
+
+                const personCard = slot.querySelector('.person-card');
+                const testimonyCard = slot.querySelector('.testimony-card');
+                const evidenceCard = slot.querySelector('.evidence-card');
+
+                if (!personCard || !testimonyCard || !evidenceCard) {
+                    slot.classList.add('hint-empty');
+                    return;
+                }
+
+                const pId = personCard.id.replace('person-', '');
+                const tId = testimonyCard.id.replace('testimony-', '');
+                const eId = evidenceCard.id.replace('evidence-', '');
+
+                if (pId === correctData.personId && tId === correctData.testimonyId && eId === correctData.evidenceId) {
+                    slot.classList.add('hint-correct');
+                } else {
+                    slot.classList.add('hint-incorrect');
+                }
+            });
+
+            // Timeline B
+            document.querySelectorAll('#timeline-b .timeline-slot').forEach((slot, index) => {
+                const order = parseInt(slot.dataset.order);
+                const correctData = correctAnswerB.find(c => c.order === order);
+                if (!correctData) return;
+
+                const personCard = slot.querySelector('.person-card');
+                const testimonyCard = slot.querySelector('.testimony-card');
+                const evidenceCard = slot.querySelector('.evidence-card');
+
+                if (!personCard || !testimonyCard || !evidenceCard) {
+                    slot.classList.add('hint-empty');
+                    return;
+                }
+
+                const pId = personCard.id.replace('person-', '');
+                const tId = testimonyCard.id.replace('testimony-', '');
+                const eId = evidenceCard.id.replace('evidence-', '');
+
+                if (pId === correctData.personId && tId === correctData.testimonyId && eId === correctData.evidenceId) {
+                    slot.classList.add('hint-correct');
+                } else {
+                    slot.classList.add('hint-incorrect');
+                }
+            });
+        }
+
+        function clearHints() {
+            document.querySelectorAll('.timeline-slot').forEach(slot => {
+                slot.classList.remove('hint-correct', 'hint-incorrect', 'hint-empty');
+            });
+        }
 
         window.switchTab = function (type) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
