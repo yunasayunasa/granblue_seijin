@@ -339,20 +339,23 @@
         }
 
         /* Hint slot highlighting */
-        .timeline-slot.hint-correct {
+        .dropzone.hint-correct {
             border: 3px solid #2196f3 !important;
+            background-color: rgba(33, 150, 243, 0.1) !important;
             box-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
             animation: pulse-blue 1.5s infinite;
         }
 
-        .timeline-slot.hint-incorrect {
+        .dropzone.hint-incorrect {
             border: 3px solid #f44336 !important;
+            background-color: rgba(244, 67, 54, 0.1) !important;
             box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
             animation: pulse-red 1.5s infinite;
         }
 
-        .timeline-slot.hint-empty {
+        .dropzone.hint-empty {
             border: 3px solid #ffc107 !important;
+            background-color: rgba(255, 193, 7, 0.1) !important;
             box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
             animation: pulse-yellow 1.5s infinite;
         }
@@ -594,30 +597,54 @@
                 const correctData = correctLinkage.find(c => c.order === order);
                 if (!correctData) return;
 
-                const personCard = slot.querySelector('.person-card');
-                const testimonyCard = slot.querySelector('.testimony-card');
-                const evidenceCard = slot.querySelector('.evidence-card');
+                const personDropzone = slot.querySelector('.person-dropzone');
+                const testimonyDropzone = slot.querySelector('.testimony-dropzone');
+                const evidenceDropzone = slot.querySelector('.evidence-dropzone');
 
-                if (!personCard || !testimonyCard || !evidenceCard) {
-                    slot.classList.add('hint-empty');
-                    return;
+                // Check person
+                const personCard = personDropzone.querySelector('.person-card');
+                if (!personCard) {
+                    personDropzone.classList.add('hint-empty');
+                } else {
+                    const pId = personCard.id.replace('person-', '');
+                    if (pId === correctData.personId) {
+                        personDropzone.classList.add('hint-correct');
+                    } else {
+                        personDropzone.classList.add('hint-incorrect');
+                    }
                 }
 
-                const pId = personCard.id.replace('person-', '');
-                const tId = testimonyCard.id.replace('testimony-', '');
-                const eId = evidenceCard.id.replace('evidence-', '');
-
-                if (pId === correctData.personId && tId === correctData.testimonyId && eId === correctData.evidenceId) {
-                    slot.classList.add('hint-correct');
+                // Check testimony
+                const testimonyCard = testimonyDropzone.querySelector('.testimony-card');
+                if (!testimonyCard) {
+                    testimonyDropzone.classList.add('hint-empty');
                 } else {
-                    slot.classList.add('hint-incorrect');
+                    const tId = testimonyCard.id.replace('testimony-', '');
+                    if (tId === correctData.testimonyId) {
+                        testimonyDropzone.classList.add('hint-correct');
+                    } else {
+                        testimonyDropzone.classList.add('hint-incorrect');
+                    }
+                }
+
+                // Check evidence
+                const evidenceCard = evidenceDropzone.querySelector('.evidence-card');
+                if (!evidenceCard) {
+                    evidenceDropzone.classList.add('hint-empty');
+                } else {
+                    const eId = evidenceCard.id.replace('evidence-', '');
+                    if (eId === correctData.evidenceId) {
+                        evidenceDropzone.classList.add('hint-correct');
+                    } else {
+                        evidenceDropzone.classList.add('hint-incorrect');
+                    }
                 }
             });
         }
 
         function clearHints() {
-            document.querySelectorAll('.timeline-slot').forEach(slot => {
-                slot.classList.remove('hint-correct', 'hint-incorrect', 'hint-empty');
+            document.querySelectorAll('.dropzone').forEach(dropzone => {
+                dropzone.classList.remove('hint-correct', 'hint-incorrect', 'hint-empty');
             });
         }
 
