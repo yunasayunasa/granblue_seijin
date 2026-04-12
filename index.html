@@ -133,20 +133,27 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 24px;
         }
 
         .game-card {
             position: relative;
             background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
             border-radius: 12px;
-            padding: 30px;
+            padding: 28px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             border: 2px solid transparent;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             animation: slideInLeft 0.5s ease;
+            /* button リセット */
+            appearance: none;
+            -webkit-appearance: none;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            text-align: left;
+            width: 100%;
         }
 
         .game-card:nth-child(1) {
@@ -184,8 +191,8 @@
         }
 
         .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
         }
 
         .game-card:hover::before {
@@ -193,7 +200,16 @@
         }
 
         .game-card:active {
-            transform: translateY(-2px) scale(0.98);
+            transform: translateY(0) scale(0.98);
+        }
+
+        .game-card:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.25);
+        }
+
+        .game-card.valentine:focus-visible {
+            box-shadow: 0 0 0 3px rgba(216, 27, 96, 0.25);
         }
 
         /* 成人の日カード */
@@ -309,6 +325,17 @@
                 gap: 10px;
             }
         }
+
+        /* アニメーション低減設定への対応 */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 
@@ -324,34 +351,43 @@
 
         <div class="games-container">
             <!-- 成人の日 -->
-            <div class="game-card seijin" onclick="location.href='seijin.html'">
+            <button class="game-card seijin" aria-label="成人の日 — 消えた紅い祝い箱 — ゲームを開始する">
                 <div class="card-header">
-                    <div class="card-icon">🎌</div>
+                    <div class="card-icon" role="img" aria-hidden="true">🎌</div>
                     <div>
                         <div class="card-title">成人の日</div>
                     </div>
                 </div>
                 <div class="card-subtitle">消えた紅い祝い箱</div>
-                <span class="card-action">開始する</span>
-            </div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
 
             <!-- バレンタイン -->
-            <div class="game-card valentine" onclick="location.href='valentine.html'">
+            <button class="game-card valentine" aria-label="バレンタイン — 交錯するハートチョコ — ゲームを開始する">
                 <div class="card-header">
-                    <div class="card-icon">💝</div>
+                    <div class="card-icon" role="img" aria-hidden="true">💝</div>
                     <div>
                         <div class="card-title">バレンタイン</div>
                     </div>
                 </div>
                 <div class="card-subtitle">交錯するハートチョコ</div>
-                <span class="card-action">開始する</span>
-            </div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
         </div>
 
         <div class="footer">
             © 2026 Timeline Mystery Games
         </div>
     </div>
+
+    <script>
+        document.querySelector('.game-card.seijin').addEventListener('click', () => {
+            location.href = 'seijin.html';
+        });
+        document.querySelector('.game-card.valentine').addEventListener('click', () => {
+            location.href = 'valentine.html';
+        });
+    </script>
 </body>
 
 </html>
