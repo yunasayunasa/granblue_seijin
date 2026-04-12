@@ -927,6 +927,7 @@
         }
 
         function setupSortable(sourceEl, targetSelector, groupName) {
+            if (typeof Sortable === 'undefined') return; // CDN 未到達時はタップ操作のみで続行
             const options = {
                 group: groupName,
                 animation: 150,
@@ -1018,13 +1019,7 @@
             }
         });
 
-        if (typeof Sortable === 'undefined') {
-            resultArea.style.display = 'block';
-            resultArea.className = 'incorrect';
-            resultArea.textContent = 'ゲームの読み込みに失敗しました。ページを再読み込みしてください。';
-        } else {
-            init();
-        }
+        init();
     </script>
 
 </body>
