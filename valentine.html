@@ -3,9 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>バレンタインミステリ：交錯するハートチョコ</title>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -220,8 +220,8 @@
 
         .sortable-ghost {
             opacity: 0.4;
-            background-color: #fff9c4 !important;
-            border: 2px dashed #fbc02d !important;
+            background-color: #fff9c4;
+            border: 2px dashed #fbc02d;
         }
 
         .sortable-drag {
@@ -359,24 +359,24 @@
             background-color: #ff9800;
         }
 
-        /* Hint slot highlighting */
+        /* Hint slot highlighting — .dropzone.hint-* は特異度 (0,2,0) で .dropzone を上書きできる */
         .dropzone.hint-correct {
-            border: 3px solid #2196f3 !important;
-            background-color: rgba(33, 150, 243, 0.1) !important;
+            border: 3px solid #2196f3;
+            background-color: rgba(33, 150, 243, 0.1);
             box-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
             animation: pulse-blue 1.5s infinite;
         }
 
         .dropzone.hint-incorrect {
-            border: 3px solid #f44336 !important;
-            background-color: rgba(244, 67, 54, 0.1) !important;
+            border: 3px solid #f44336;
+            background-color: rgba(244, 67, 54, 0.1);
             box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
             animation: pulse-red 1.5s infinite;
         }
 
         .dropzone.hint-empty {
-            border: 3px solid #ffc107 !important;
-            background-color: rgba(255, 193, 7, 0.1) !important;
+            border: 3px solid #ffc107;
+            background-color: rgba(255, 193, 7, 0.1);
             box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
             animation: pulse-yellow 1.5s infinite;
         }
@@ -490,6 +490,31 @@
                 font-size: 0.9em;
             }
         }
+
+        /* フォーカス可視スタイル（Genesis 準拠） */
+        :focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.25);
+        }
+
+        .tab-btn:focus-visible,
+        .hint-btn:focus-visible,
+        #check-answer-btn:focus-visible,
+        .back-button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.4);
+        }
+
+        /* アニメーション低減設定への対応 */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 
@@ -510,24 +535,24 @@
             <strong>重要：</strong>同じ人物は2つのタイムラインに同時に登場できません。各人物カードは1回のみ使用可能です。
         </div>
 
-        <div class="tab-container">
-            <button class="tab-btn active" onclick="switchTab('person')">人物</button>
-            <button class="tab-btn" onclick="switchTab('testimony')">証言</button>
-            <button class="tab-btn" onclick="switchTab('evidence')">証拠品</button>
+        <div class="tab-container" role="tablist" aria-label="カード種別">
+            <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="pool-person" onclick="switchTab(event, 'person')">人物</button>
+            <button class="tab-btn" role="tab" aria-selected="false" aria-controls="pool-testimony" onclick="switchTab(event, 'testimony')">証言</button>
+            <button class="tab-btn" role="tab" aria-selected="false" aria-controls="pool-evidence" onclick="switchTab(event, 'evidence')">証拠品</button>
         </div>
 
         <div class="card-pool-container">
-            <div id="pool-person" class="pool-section active">
+            <div id="pool-person" class="pool-section active" role="tabpanel" aria-label="人物カード">
                 <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
                 <div id="person-unsorted-area" class="card-pool" data-type="person"></div>
             </div>
 
-            <div id="pool-testimony" class="pool-section">
+            <div id="pool-testimony" class="pool-section" role="tabpanel" aria-label="証言カード">
                 <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
                 <div id="testimony-unsorted-area" class="card-pool" data-type="testimony"></div>
             </div>
 
-            <div id="pool-evidence" class="pool-section">
+            <div id="pool-evidence" class="pool-section" role="tabpanel" aria-label="証拠品カード">
                 <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
                 <div id="evidence-unsorted-area" class="card-pool" data-type="evidence"></div>
             </div>
@@ -550,6 +575,32 @@
             <button id="check-answer-btn">推理する</button>
         </div>
         <div id="result-area"></div>
+
+        <!-- 正解時の表示テンプレート（静的コンテンツ、XSS リスクなし） -->
+        <template id="success-template">
+            <h3>【見事な推理です！】</h3>
+            <p>真実はこうでした。</p>
+            <p>
+                <b>■タイムラインA（カフェ・2月13日）</b><br>
+                09:00 サンダルフォンがチョコ制作開始（「<b>明日は</b>バレンタイン」と発言）<br>
+                10:00 ルリアが勘違いで配布<br>
+                11:00 カタリナが配布を手伝う<br>
+                12:00 ロジャーが曖昧な証言<br>
+                13:00 ラカムが消失を報告（<b>カレンダー：13日</b>）<br>
+                <br>
+                <b>■タイムラインB（工房・2月14日）</b><br>
+                09:00 シェロカルテが確認（「<b>今日は</b>バレンタイン」と発言）<br>
+                10:00 ルオーが密かに配置<br>
+                11:00 フェディエルが大騒ぎを目撃<br>
+                12:00 ビィが不思議なチョコの話を聞く<br>
+                13:00 オイゲンが関連性を示唆（<b>カレンダー：14日</b>）<br>
+            </p>
+            <p><b>結論：</b><br>
+                カフェのチョコ → ルリア＆カタリナが常連客に配布済み（2月13日）<br>
+                工房のチョコ → ルオーのサプライズ（2月14日）<br>
+                <b>2つは全く別の事件で、1日ズレていた！</b>
+            </p>
+        </template>
     </div>
 
     <script>
@@ -664,7 +715,7 @@
                 if (!personCard) {
                     personDropzone.classList.add('hint-empty');
                 } else {
-                    const pId = personCard.id.replace('person-', '');
+                    const pId = personCard.dataset.entityId;
                     if (pId === correctData.personId) {
                         personDropzone.classList.add('hint-correct');
                     } else {
@@ -677,7 +728,7 @@
                 if (!testimonyCard) {
                     testimonyDropzone.classList.add('hint-empty');
                 } else {
-                    const tId = testimonyCard.id.replace('testimony-', '');
+                    const tId = testimonyCard.dataset.entityId;
                     if (tId === correctData.testimonyId) {
                         testimonyDropzone.classList.add('hint-correct');
                     } else {
@@ -690,7 +741,7 @@
                 if (!evidenceCard) {
                     evidenceDropzone.classList.add('hint-empty');
                 } else {
-                    const eId = evidenceCard.id.replace('evidence-', '');
+                    const eId = evidenceCard.dataset.entityId;
                     if (eId === correctData.evidenceId) {
                         evidenceDropzone.classList.add('hint-correct');
                     } else {
@@ -714,7 +765,7 @@
                 if (!personCard) {
                     personDropzone.classList.add('hint-empty');
                 } else {
-                    const pId = personCard.id.replace('person-', '');
+                    const pId = personCard.dataset.entityId;
                     if (pId === correctData.personId) {
                         personDropzone.classList.add('hint-correct');
                     } else {
@@ -727,7 +778,7 @@
                 if (!testimonyCard) {
                     testimonyDropzone.classList.add('hint-empty');
                 } else {
-                    const tId = testimonyCard.id.replace('testimony-', '');
+                    const tId = testimonyCard.dataset.entityId;
                     if (tId === correctData.testimonyId) {
                         testimonyDropzone.classList.add('hint-correct');
                     } else {
@@ -740,7 +791,7 @@
                 if (!evidenceCard) {
                     evidenceDropzone.classList.add('hint-empty');
                 } else {
-                    const eId = evidenceCard.id.replace('evidence-', '');
+                    const eId = evidenceCard.dataset.entityId;
                     if (eId === correctData.evidenceId) {
                         evidenceDropzone.classList.add('hint-correct');
                     } else {
@@ -756,9 +807,15 @@
             });
         }
 
-        window.switchTab = function (type) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
+        window.switchTab = function (evt, type) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+                evt.currentTarget.setAttribute('aria-selected', 'true');
+            }
             document.querySelectorAll('.pool-section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(`pool-${type}`).classList.add('active');
             deselect();
@@ -797,7 +854,10 @@
                 timelineBArea.appendChild(slot);
             });
 
+            // 重複登録防止: 初回のみリスナーを追加する
             document.querySelectorAll('.dropzone, .card-pool').forEach(zone => {
+                if (zone.dataset.listenerAttached) return;
+                zone.dataset.listenerAttached = 'true';
                 zone.addEventListener('click', (e) => {
                     if (selectedCard) {
                         const zoneType = zone.dataset.type;
@@ -821,6 +881,8 @@
             div.id = id;
             div.className = `card ${className}`;
             div.dataset.type = type;
+            // プレフィックス（"person-", "testimony-" 等）を除いた生 ID を格納
+            div.dataset.entityId = id.replace(/^[^-]+-/, '');
             div.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (div === selectedCard) {
@@ -883,78 +945,56 @@
             });
         }
 
-        checkBtn.addEventListener('click', () => {
+        // タイムライン判定共通関数
+        function checkTimeline(slotSelector, correctAnswers, usedPersons, feedback) {
+            let filledCount = 0;
             let isCorrect = true;
-            let filledCountA = 0;
-            let filledCountB = 0;
-            let feedback = [];
+            const duplicatePersonMsg = '・同じ人物が2つのタイムラインに登場しています。';
+            const tartmanMsg = '・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？';
+
+            document.querySelectorAll(slotSelector).forEach((slot) => {
+                const order = parseInt(slot.dataset.order);
+                const correctData = correctAnswers.find(c => c.order === order);
+                if (!correctData) return;
+
+                const personCard = slot.querySelector('.person-card');
+                const testimonyCard = slot.querySelector('.testimony-card');
+                const evidenceCard = slot.querySelector('.evidence-card');
+
+                if (!personCard || !testimonyCard || !evidenceCard) return;
+                filledCount++;
+
+                const pId = personCard.dataset.entityId;
+                const tId = testimonyCard.dataset.entityId;
+                const eId = evidenceCard.dataset.entityId;
+
+                if (usedPersons.has(pId)) {
+                    if (!feedback.includes(duplicatePersonMsg)) feedback.push(duplicatePersonMsg);
+                    isCorrect = false;
+                }
+                usedPersons.add(pId);
+
+                if (pId !== correctData.personId || tId !== correctData.testimonyId || eId !== correctData.evidenceId) {
+                    isCorrect = false;
+                    if ((tId === 'ta_false' || tId === 'tb_false') && !feedback.includes(tartmanMsg)) {
+                        feedback.push(tartmanMsg);
+                    }
+                }
+            });
+
+            return { filledCount, isCorrect };
+        }
+
+        checkBtn.addEventListener('click', () => {
+            const feedback = [];
             const usedPersons = new Set();
 
-            // タイムラインA判定
-            document.querySelectorAll('#timeline-a .timeline-slot').forEach((slot, index) => {
-                const order = parseInt(slot.dataset.order);
-                const correctData = correctAnswerA.find(c => c.order === order);
-                if (!correctData) return;
+            const { filledCount: filledCountA, isCorrect: correctA } =
+                checkTimeline('#timeline-a .timeline-slot', correctAnswerA, usedPersons, feedback);
+            const { filledCount: filledCountB, isCorrect: correctB } =
+                checkTimeline('#timeline-b .timeline-slot', correctAnswerB, usedPersons, feedback);
 
-                const personCard = slot.querySelector('.person-card');
-                const testimonyCard = slot.querySelector('.testimony-card');
-                const evidenceCard = slot.querySelector('.evidence-card');
-
-                if (!personCard || !testimonyCard || !evidenceCard) { return; }
-                filledCountA++;
-
-                const pId = personCard.id.replace('person-', '');
-                const tId = testimonyCard.id.replace('testimony-', '');
-                const eId = evidenceCard.id.replace('evidence-', '');
-
-                if (usedPersons.has(pId)) {
-                    feedback.push('・同じ人物が2つのタイムラインに登場しています。');
-                    isCorrect = false;
-                }
-                usedPersons.add(pId);
-
-                if (pId !== correctData.personId || tId !== correctData.testimonyId || eId !== correctData.evidenceId) {
-                    isCorrect = false;
-                    if (tId === 'ta_false' || tId === 'tb_false') {
-                        feedback.push(`・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？`);
-                    }
-                }
-            });
-
-            // タイムラインB判定
-            document.querySelectorAll('#timeline-b .timeline-slot').forEach((slot, index) => {
-                const order = parseInt(slot.dataset.order);
-                const correctData = correctAnswerB.find(c => c.order === order);
-                if (!correctData) return;
-
-                const personCard = slot.querySelector('.person-card');
-                const testimonyCard = slot.querySelector('.testimony-card');
-                const evidenceCard = slot.querySelector('.evidence-card');
-
-                if (!personCard || !testimonyCard || !evidenceCard) { return; }
-                filledCountB++;
-
-                const pId = personCard.id.replace('person-', '');
-                const tId = testimonyCard.id.replace('testimony-', '');
-                const eId = evidenceCard.id.replace('evidence-', '');
-
-                if (usedPersons.has(pId)) {
-                    if (!feedback.includes('・同じ人物が2つのタイムラインに登場しています。')) {
-                        feedback.push('・同じ人物が2つのタイムラインに登場しています。');
-                    }
-                    isCorrect = false;
-                }
-                usedPersons.add(pId);
-
-                if (pId !== correctData.personId || tId !== correctData.testimonyId || eId !== correctData.evidenceId) {
-                    isCorrect = false;
-                    if (tId === 'ta_false' || tId === 'tb_false') {
-                        if (!feedback.includes('・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？')) {
-                            feedback.push(`・タルトマンの証言は信用できますか？2つのチョコは本当に同じものでしょうか？`);
-                        }
-                    }
-                }
-            });
+            const isCorrect = correctA && correctB;
 
             resultArea.style.display = 'block';
 
@@ -963,29 +1003,9 @@
                 resultArea.textContent = '両方のタイムラインをすべて埋めてください。';
             } else if (isCorrect) {
                 resultArea.className = 'correct';
-                resultArea.innerHTML = `
-                <h3>【見事な推理です！】</h3>
-                <p>真実はこうでした。</p>
-                <p>
-                <b>■タイムラインA（カフェ・2月13日）</b><br>
-                09:00 サンダルフォンがチョコ制作開始（「<b>明日は</b>バレンタイン」と発言）<br>
-                10:00 ルリアが勘違いで配布<br>
-                11:00 カタリナが配布を手伝う<br>
-                12:00 ロジャーが曖昧な証言<br>
-                13:00 ラカムが消失を報告（<b>カレンダー：13日</b>）<br>
-                <br>
-                <b>■タイムラインB（工房・2月14日）</b><br>
-                09:00 シェロカルテが確認（「<b>今日は</b>バレンタイン」と発言）<br>
-                10:00 ルオーが密かに配置<br>
-                11:00 フェディエルが大騒ぎを目撃<br>
-                12:00 ビィが不思議なチョコの話を聞く<br>
-                13:00 オイゲンが関連性を示唆（<b>カレンダー：14日</b>）<br>
-                </p>
-                <p><b>結論：</b><br>
-                カフェのチョコ → ルリア＆カタリナが常連客に配布済み（2月13日）<br>
-                工房のチョコ → ルオーのサプライズ（2月14日）<br>
-                <b>2つは全く別の事件で、1日ズレていた！</b></p>
-            `;
+                resultArea.textContent = '';
+                const tmpl = document.getElementById('success-template');
+                resultArea.appendChild(tmpl.content.cloneNode(true));
             } else {
                 resultArea.className = 'incorrect';
                 let msg = '推理に誤りがあります。\n';
@@ -998,7 +1018,13 @@
             }
         });
 
-        init();
+        if (typeof Sortable === 'undefined') {
+            resultArea.style.display = 'block';
+            resultArea.className = 'incorrect';
+            resultArea.textContent = 'ゲームの読み込みに失敗しました。ページを再読み込みしてください。';
+        } else {
+            init();
+        }
     </script>
 
 </body>
