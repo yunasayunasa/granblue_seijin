@@ -117,6 +117,30 @@
             background-color:#f3e5f5; border:2px solid var(--accent-gold);
             transform:scale(1.05); box-shadow:0 5px 15px rgba(197,160,89,0.3); z-index:10;
         }
+        /* カード削除ボタン */
+        .remove-btn {
+            display: none;
+            position: absolute;
+            top: -8px; right: -8px;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #e53935;
+            color: #fff;
+            border: 2px solid #fff;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.15s;
+            line-height: 1;
+        }
+        .dropzone .card .remove-btn { display: flex; }
+        .remove-btn:hover { transform: scale(1.2); background: #b71c1c; }
+
         .sortable-ghost { opacity:0.4; background-color:#e1bee7; border:2px dashed var(--main-purple); }
         .sortable-drag {
             cursor:grabbing; opacity:1; background-color:#fff;
@@ -423,17 +447,61 @@ function selectCard(card) {
     });
 }
 
+function swapCards(cardA, cardB) {
+    if (cardA.dataset.type !== cardB.dataset.type) { selectCard(cardB); return; }
+    const tlA = cardA.dataset.timeline;
+    const tlB = cardB.dataset.timeline;
+    const slotTlA = cardA.parentElement?.closest('[data-timeline]')?.dataset.timeline;
+    const slotTlB = cardB.parentElement?.closest('[data-timeline]')?.dataset.timeline;
+    // タイムライン制限チェック: cardB を cardA の場所に置けるか、cardA を cardB の場所に置けるか
+    if (tlA && slotTlB && tlA !== slotTlB) { deselect(); return; }
+    if (tlB && slotTlA && tlB !== slotTlA) { deselect(); return; }
+    const parentA = cardA.parentElement;
+    const parentB = cardB.parentElement;
+    const marker = document.createComment('swap');
+    parentA.insertBefore(marker, cardA);
+    parentB.insertBefore(cardA, cardB);
+    parentA.insertBefore(cardB, marker);
+    parentA.removeChild(marker);
+    deselect();
+    if (hintActive) showHints();
+}
+
 function createCard(text, id, className, parent, type, timeline) {
     const div = document.createElement('div');
-    div.textContent = text;
     div.id = id;
     div.className = `card ${className}`;
     div.dataset.type = type;
     div.dataset.entityId = id.replace(/^[^-]+-/, '');
+    div.dataset.label = text;
     if (timeline) div.dataset.timeline = timeline;
+
+    const label = document.createElement('span');
+    label.textContent = text;
+    div.appendChild(label);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '✕';
+    removeBtn.setAttribute('aria-label', 'カードを戻す');
+    removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pool = document.getElementById(`${type}-unsorted-area`);
+        if (pool) pool.appendChild(div);
+        deselect();
+        if (hintActive) showHints();
+    });
+    div.appendChild(removeBtn);
+
     div.addEventListener('click', (e) => {
         e.stopPropagation();
-        div === selectedCard ? deselect() : selectCard(div);
+        if (div === selectedCard) {
+            deselect();
+        } else if (selectedCard && selectedCard.dataset.type === div.dataset.type) {
+            swapCards(selectedCard, div);
+        } else {
+            selectCard(div);
+        }
     });
     parent.appendChild(div);
 }
@@ -449,7 +517,7 @@ function tryMoveCard(card, targetZone) {
         resultArea.innerHTML = '';
         const p = document.createElement('p');
         const tlLabel = cardTimeline === 'A' ? '式場' : '礼拝堂';
-        p.textContent = `「${card.textContent}」は${tlLabel}タイムラインにのみ配置できます。`;
+        p.textContent = `「${card.dataset.label || card.querySelector('span')?.textContent || ''}」は${tlLabel}タイムラインにのみ配置できます。`;
         resultArea.appendChild(p);
         deselect();
         return;
