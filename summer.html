@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイムラインミステリ：碧玉の浜の三つの証言</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
+        integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb"
+        crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e3f2fd;
+            --container-bg: #f0f9ff;
+            --main-blue: #0277bd;
+            --accent-coral: #ff7043;
+            --sub-blue: #b3e5fc;
+            --text-color: #01344e;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Shippori Mincho','Hiragino Mincho ProN',serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(rgba(2,119,189,0.15) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            padding: 10px;
+            overscroll-behavior: none;
+        }
+        .game-container {
+            width: 100%; max-width: 1400px; margin: 0 auto;
+            background-color: var(--container-bg);
+            border: 2px solid var(--main-blue);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(2,119,189,0.2);
+            padding: 15px; position: relative;
+        }
+        .game-container::before {
+            content:""; position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+            border:1px solid var(--sub-blue); border-radius:8px; pointer-events:none;
+        }
+        .back-button {
+            position:absolute; top:15px; left:15px;
+            padding:8px 16px; background:var(--main-blue); color:#fff;
+            border:none; border-radius:20px; cursor:pointer;
+            font-family:inherit; font-size:0.9em; transition:all 0.3s;
+        }
+        .back-button:hover { background:#01579b; transform:translateY(-2px); }
+        h1 {
+            color: var(--main-blue); text-align:center;
+            border-bottom: 3px double var(--accent-coral);
+            padding-bottom:10px; font-size:1.8em;
+            letter-spacing:0.1em; margin:10px 0 20px;
+        }
+        .story-text {
+            line-height:1.6; margin-bottom:20px;
+            text-align:center; font-size:0.95em;
+        }
+        .unique-notice {
+            text-align:center; font-size:0.9em;
+            background:rgba(2,119,189,0.08); border:1px solid var(--main-blue);
+            border-radius:6px; padding:8px 16px; margin-bottom:16px;
+            color:var(--main-blue);
+        }
+        .area-title {
+            font-weight:bold; font-size:1.2em;
+            margin:20px 0 15px; padding-left:15px;
+            border-left:6px solid var(--main-blue);
+            color:var(--main-blue);
+            background:linear-gradient(90deg,rgba(2,119,189,0.1) 0%,rgba(255,255,255,0) 100%);
+        }
+        .instruction-text {
+            font-size:0.85em; color:#546e7a;
+            margin-bottom:10px; text-align:center;
+            background:rgba(255,255,255,0.7); padding:5px; border-radius:4px;
+        }
+
+        /* --- タブ --- */
+        .tab-container {
+            display:flex; gap:5px; margin-bottom:0;
+            border-bottom:2px solid var(--accent-coral); padding-left:10px;
+        }
+        .tab-btn {
+            padding:12px 20px; background-color:rgba(255,255,255,0.4);
+            border:1px solid var(--sub-blue); border-bottom:none;
+            cursor:pointer; font-family:inherit; color:var(--text-color);
+            border-radius:8px 8px 0 0; transition:all 0.2s; font-weight:bold;
+        }
+        .tab-btn.active {
+            background-color:var(--container-bg); border-color:var(--accent-coral);
+            border-bottom:2px solid var(--container-bg); color:var(--accent-coral);
+            transform:translateY(2px);
+        }
+        .card-pool-container {
+            background-color:rgba(255,255,255,0.6);
+            border:1px solid var(--sub-blue); border-top:none;
+            border-radius:0 0 8px 8px; min-height:100px; margin-bottom:20px;
+        }
+        .pool-section { display:none; padding:15px; animation:fadeIn 0.3s ease; }
+        .pool-section.active { display:block; }
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(-5px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .card-pool {
+            min-height:80px; display:flex; flex-wrap:wrap; gap:10px;
+        }
+
+        /* --- カード共通 --- */
+        .card {
+            background-color:#fff; border:1px solid #b3d9f0; border-radius:6px;
+            padding:12px; cursor:grab; box-shadow:0 2px 4px rgba(0,0,0,0.05);
+            font-size:0.95em; position:relative; touch-action:none;
+            user-select:none; transition:background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .card.selected {
+            background-color:#e1f5fe; border:2px solid var(--accent-coral);
+            transform:scale(1.05); box-shadow:0 5px 15px rgba(255,112,67,0.3); z-index:10;
+        }
+        .sortable-ghost { opacity:0.4; background-color:#b3e5fc; border:2px dashed var(--main-blue); }
+        .sortable-drag {
+            cursor:grabbing; opacity:1; background-color:#fff;
+            box-shadow:0 10px 20px rgba(0,0,0,0.2);
+            transform:scale(1.05) rotate(2deg); border:2px solid var(--accent-coral);
+        }
+        .person-card {
+            border-left:5px solid var(--main-blue);
+            min-width:100px; text-align:center; font-weight:bold;
+        }
+        .testimony-card { border-left:5px solid #0288d1; width:100%; max-width:400px; }
+        .evidence-card {
+            border-left:5px solid var(--accent-coral);
+            min-width:120px; text-align:center; font-weight:bold;
+            background-color:#fff8f6;
+        }
+
+        /* --- トリプルタイムライン --- */
+        .triple-timeline {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        .timeline-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .timeline-column-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 8px;
+            border-radius: 6px;
+            color: #fff;
+        }
+        .timeline-column-header.morning { background-color: #f57c00; }
+        .timeline-column-header.noon    { background-color: var(--main-blue); }
+        .timeline-column-header.evening { background-color: #6a1b9a; }
+        .timeline-slot {
+            background-color:#fff; border:1px solid var(--sub-blue);
+            border-radius:var(--border-radius); padding:12px;
+            display:flex; flex-direction:column;
+            gap:8px;
+            box-shadow:0 2px 5px rgba(0,0,0,0.05); position:relative;
+        }
+        .time-label {
+            font-weight:bold; color:var(--main-blue); text-align:center;
+            font-size:1.0em; background:#f0f9ff; padding:4px;
+            border:1px solid var(--sub-blue); border-radius:4px;
+        }
+        .dropzone {
+            min-height:60px; background-color:#fafeff;
+            border:2px dashed #b3d9f0; border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.2s; z-index:1;
+        }
+        .dropzone.highlight-target {
+            background-color:#e1f5fe; border-color:var(--accent-coral); cursor:pointer;
+        }
+        .testimony-dropzone { padding:5px; }
+
+        /* ヒント */
+        .dropzone.hint-correct {
+            border:3px solid #2196f3; background-color:rgba(33,150,243,0.1);
+            box-shadow:0 0 15px rgba(33,150,243,0.5); animation:pulse-blue 1.5s infinite;
+        }
+        .dropzone.hint-incorrect {
+            border:3px solid #f44336; background-color:rgba(244,67,54,0.1);
+            box-shadow:0 0 15px rgba(244,67,54,0.5); animation:pulse-red 1.5s infinite;
+        }
+        .dropzone.hint-empty {
+            border:3px solid #ffc107; background-color:rgba(255,193,7,0.1);
+            box-shadow:0 0 15px rgba(255,193,7,0.5); animation:pulse-yellow 1.5s infinite;
+        }
+        @keyframes pulse-blue {
+            0%,100%{box-shadow:0 0 15px rgba(33,150,243,0.5);}
+            50%{box-shadow:0 0 25px rgba(33,150,243,0.8);}
+        }
+        @keyframes pulse-red {
+            0%,100%{box-shadow:0 0 15px rgba(244,67,54,0.5);}
+            50%{box-shadow:0 0 25px rgba(244,67,54,0.8);}
+        }
+        @keyframes pulse-yellow {
+            0%,100%{box-shadow:0 0 15px rgba(255,193,7,0.5);}
+            50%{box-shadow:0 0 25px rgba(255,193,7,0.8);}
+        }
+
+        /* --- ボタン --- */
+        .button-container {
+            text-align:center; margin-top:40px;
+            display:flex; justify-content:center; gap:15px; flex-wrap:wrap;
+        }
+        .hint-btn {
+            background-color:#ffc107; color:#333; border:none;
+            padding:12px 30px; font-size:1.1em; border-radius:25px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 8px rgba(255,193,7,0.4); transition:all 0.3s;
+        }
+        .hint-btn:hover { background-color:#ffb300; transform:translateY(-2px); }
+        .hint-btn.active { background-color:#ff9800; }
+        #check-answer-btn {
+            background-color:var(--main-blue); color:#fff; border:none;
+            padding:15px 40px; font-size:1.2em; border-radius:30px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 10px rgba(2,119,189,0.4); transition:all 0.3s;
+        }
+        #check-answer-btn:hover { background-color:#01579b; transform:translateY(-2px); }
+
+        /* --- 結果 --- */
+        #result-area {
+            margin-top:30px; padding:20px; border-radius:8px;
+            line-height:1.8; white-space:pre-wrap; display:none;
+        }
+        .correct  { background-color:#f1f8e9; border:1px solid #8bc34a; color:#2e7d32; }
+        .incorrect{ background-color:#ffebee; border:1px solid #ef9a9a; color:#c62828; }
+
+        /* --- モバイル --- */
+        @media (max-width: 900px) {
+            body { padding:5px; }
+            .game-container { padding:10px; }
+            h1 { font-size:1.5em; }
+            .triple-timeline {
+                grid-template-columns: 1fr;
+            }
+            .dropzone { min-height:50px; }
+            .testimony-card { font-size:0.9em; }
+        }
+
+        /* フォーカス */
+        .tab-btn:focus-visible,
+        .hint-btn:focus-visible,
+        #check-answer-btn:focus-visible,
+        .back-button:focus-visible {
+            outline:none; box-shadow:0 0 0 3px rgba(2,119,189,0.4);
+        }
+
+        /* アニメーション低減 */
+        @media (prefers-reduced-motion: reduce) {
+            *,*::before,*::after {
+                animation-duration:0.01ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <button class="back-button" onclick="location.href='index.html'">← 戻る</button>
+    <h1>碧玉の浜の三つの証言</h1>
+    <div class="story-text">
+        <p>夏の休暇で訪れた「碧玉の浜」。砂浜の岩に打ち上げられた伝説の「海蛍の守り石」を<br>
+        めぐって、乗組員たちの証言が入り乱れている。<br>
+        朝・昼・夕、<b>3つのタイムライン</b>を同時に解き明かせ。</p>
+    </div>
+    <div class="unique-notice">※ 同じ人物が二か所に現れることはない。各タイムラインに1人1回のみ配置できる。</div>
+
+    <!-- タブ -->
+    <div class="tab-container" role="tablist" aria-label="カード種別">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="pool-person"    onclick="switchTab(event,'person')">人物</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-testimony" onclick="switchTab(event,'testimony')">証言</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-evidence"  onclick="switchTab(event,'evidence')">証拠品</button>
+    </div>
+
+    <div class="card-pool-container">
+        <div id="pool-person"    class="pool-section active" role="tabpanel" aria-label="人物カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="person-unsorted-area"    class="card-pool" data-type="person"></div>
+        </div>
+        <div id="pool-testimony" class="pool-section" role="tabpanel" aria-label="証言カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="testimony-unsorted-area" class="card-pool" data-type="testimony"></div>
+        </div>
+        <div id="pool-evidence"  class="pool-section" role="tabpanel" aria-label="証拠品カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="evidence-unsorted-area"  class="card-pool" data-type="evidence"></div>
+        </div>
+    </div>
+
+    <div class="area-title">タイムライン</div>
+    <div id="triple-timeline-area" class="triple-timeline"></div>
+
+    <div class="button-container">
+        <button id="hint-btn" class="hint-btn">ヒントを見る</button>
+        <button id="check-answer-btn">推理する</button>
+    </div>
+    <div id="result-area"></div>
+
+    <template id="success-template">
+        <h3>【見事な推理です！】</h3>
+        <p>真相はこうでした。</p>
+        <p>
+            カタリナは09:00に老漁師から「守り石は海へ返すべき」と聞き、<br>
+            中央の岩から東の岩場へ石を移した。海に近い場所に置けば<br>
+            自然に波がさらっていくと考えたのだ。<br>
+            守り石は自らの力で海へ還り、翌朝の漁は大豊漁だったという。
+        </p>
+        <p><b>推理の鍵：</b><br>
+            ①09:00 カタリナ「何かしなければと思った」→ 行動の動機<br>
+            ②12:00 石が岩からなくなる → 09:00〜12:00に移動<br>
+            ③14:00 フェニー「騎士みたいな人が石を持っていた」→ カタリナの外見と一致<br>
+            ④17:00 東の岩場に出現 → カタリナが移した先
+        </p>
+    </template>
+</div>
+<script>
+// ===== データ定義 =====
+// System C: トリプルタイムライン (朝・昼・夕 × 各3スロット)
+const timelineConfig = [
+    { key:'morning', label:'朝',   times:['07:00','08:00','09:00'], headerClass:'morning' },
+    { key:'noon',    label:'昼',   times:['12:00','13:00','14:00'], headerClass:'noon'    },
+    { key:'evening', label:'夕',   times:['17:00','18:00','19:00'], headerClass:'evening' }
+];
+
+const persons = [
+    { id:'person-rackam',    text:'ラカム',       type:'person' },
+    { id:'person-silva',     text:'シルヴァ',     type:'person' },
+    { id:'person-katalina',  text:'カタリナ',     type:'person' },
+    { id:'person-lowain',    text:'ローアイン',   type:'person' },
+    { id:'person-yodarraha', text:'ヨダルラーハ', type:'person' },
+    { id:'person-fenie',     text:'フェニー',     type:'person' },
+    { id:'person-io',        text:'イオ',         type:'person' },
+    { id:'person-rosetta',   text:'ロゼッタ',     type:'person' },
+    { id:'person-lyria',     text:'ルリア',       type:'person' },
+    { id:'person-vee',       text:'ビィ',         type:'person' },
+    { id:'person-sandalphon',text:'サンダルフォン', type:'person' }
+];
+
+const testimonies = [
+    { id:'testimony-t_rackam',    text:'「早朝に浜を歩いてたら、岩の上に見慣れない石が置いてあったぞ。青白く光るきれいな石でな、誰かが忘れたのかと思ってそのままにしておいた。動かしたら悪いかと思ってな」', type:'testimony' },
+    { id:'testimony-t_silva',     text:'「8時の見回りで中央の岩を確認した。ラカムが言っていた石はあった。手のひら大の青い石で、朝日を受けて内側から光るように見えた」', type:'testimony' },
+    { id:'testimony-t_katalina',  text:'「砂浜で地元の老漁師と話す機会があったんだ。あの石は"海蛍の守り石"といって、海へ返さないと浜に不漁をもたらすと伝えられているそうだ。私は……何かしなければと思ったんだ」', type:'testimony' },
+    { id:'testimony-t_lowain',    text:'「昼に岩んとこ通ったら、さっきまであった石がないっすよ！誰か持ってっちゃったんすかね？ちょっとまずくないっすか、あんなきれいな石——」', type:'testimony' },
+    { id:'testimony-t_yodarraha', text:'「昼飯後に浜をぶらついておったら、ローアインというやつが砂浜をうろうろ探し回っておったのう。石がなくなったとしきりに言うておったが、わしはすでに察しておった」', type:'testimony' },
+    { id:'testimony-t_fenie',     text:'「14時ごろ、東の岩場の方で誰かが海を見つめていたんだよ。青い石を両手で持って、静かに立ってたんだよ。背の高い、騎士みたいな人だったな」', type:'testimony' },
+    { id:'testimony-t_io',        text:'「夕方に東の岩場へ行ったら石があったよ！朝みんなが騒いでた守り石でしょ。誰かが移したのね。次の波で流されそうだったけど……それでいいのかな、って思って触らずにいたら、本当に波が来て——」', type:'testimony' },
+    { id:'testimony-t_rosetta',   text:'「18時ごろ、岩場で青い石が波にさらわれていくのを見たわ。不思議なことに、石は沈まずにどんどん沖へと流れていって……まるで、自分で泳いでいるかのようだったわ」', type:'testimony' },
+    { id:'testimony-t_lyria',     text:'「日が沈む頃、沖合に青い光の柱が上がったのを見ました！すごくきれいで、しばらく皆で眺めていたんです。守り石が海に帰ったんじゃないかって……なんかそんな気がしました！」', type:'testimony' },
+    { id:'testimony-t_vee',       text:'（ダミー）「おいら海の家でずっとかき氷食べてたんだけど、なんか光る石があったのは知ってるぜ。食べられるかなって思ったけど舐めたら普通の石の味だった。時間？わかんね！ずっとかき氷食べてたから！」', type:'testimony' },
+    { id:'testimony-t_sandal',    text:'（ダミー）「俺は浜の東端で静かに過ごしていた。光る石の件は遠目に騒ぎになっているのは気づいたが、関与はしていない。……カタリナが何か考え込んでいるのは見たが、それがこの件と関係があるとは思わなかった」', type:'testimony' }
+];
+
+const evidences = [
+    { id:'evidence-e_stone_found',  text:'中央の岩（守り石が置かれていた跡・青白い光の染み）', type:'evidence' },
+    { id:'evidence-e_stone_check',  text:'朝日を浴びる守り石（内側から発光する様子）', type:'evidence' },
+    { id:'evidence-e_elder_note',   text:'砂に書かれた老漁師の言葉「海へ返せ」の跡', type:'evidence' },
+    { id:'evidence-e_empty_rock',   text:'空になった中央の岩（石がなくなった跡）', type:'evidence' },
+    { id:'evidence-e_search_trace', text:'砂浜の捜索跡（ローアインが歩き回った足跡）', type:'evidence' },
+    { id:'evidence-e_figure_east',  text:'東の岩場へ向かう一組の足跡（大人・騎士の靴型）', type:'evidence' },
+    { id:'evidence-e_stone_east',   text:'東の岩場の守り石（波打ち際に置かれた状態）', type:'evidence' },
+    { id:'evidence-e_wave_trace',   text:'岩場から沖へ続く青白い光の水跡', type:'evidence' },
+    { id:'evidence-e_blue_light',   text:'沖合の青い光の柱（複数の乗組員が目撃）', type:'evidence' },
+    { id:'evidence-e_candy',        text:'（ダミー）岩の上に落ちていたかき氷のシロップの染み', type:'evidence' },
+    { id:'evidence-e_footprint',    text:'（ダミー）浜に残った複数の素足の足跡（他の参拝客のもの）', type:'evidence' }
+];
+
+// 正解データ: timelineKey と slotIndex(0-2) で参照
+const correctAnswers = {
+    morning: [
+        { time:'07:00', personId:'rackam',    testimonyId:'t_rackam',    evidenceId:'e_stone_found'  },
+        { time:'08:00', personId:'silva',     testimonyId:'t_silva',     evidenceId:'e_stone_check'  },
+        { time:'09:00', personId:'katalina',  testimonyId:'t_katalina',  evidenceId:'e_elder_note'   }
+    ],
+    noon: [
+        { time:'12:00', personId:'lowain',    testimonyId:'t_lowain',    evidenceId:'e_empty_rock'   },
+        { time:'13:00', personId:'yodarraha', testimonyId:'t_yodarraha', evidenceId:'e_search_trace' },
+        { time:'14:00', personId:'fenie',     testimonyId:'t_fenie',     evidenceId:'e_figure_east'  }
+    ],
+    evening: [
+        { time:'17:00', personId:'io',        testimonyId:'t_io',        evidenceId:'e_stone_east'   },
+        { time:'18:00', personId:'rosetta',   testimonyId:'t_rosetta',   evidenceId:'e_wave_trace'   },
+        { time:'19:00', personId:'lyria',     testimonyId:'t_lyria',     evidenceId:'e_blue_light'   }
+    ]
+};
+
+// ===== ゲームロジック =====
+let selectedCard = null;
+let hintActive = false;
+
+function deselect() {
+    if (selectedCard) {
+        selectedCard.classList.remove('selected');
+        selectedCard = null;
+    }
+    document.querySelectorAll('.dropzone').forEach(z => z.classList.remove('highlight-target'));
+}
+
+function selectCard(card) {
+    deselect();
+    selectedCard = card;
+    card.classList.add('selected');
+    document.querySelectorAll('.dropzone').forEach(z => {
+        if (z.dataset.type === card.dataset.type) z.classList.add('highlight-target');
+    });
+}
+
+function createCard(text, id, className, parent, type) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.id = id;
+    div.className = `card ${className}`;
+    div.dataset.type = type;
+    div.dataset.entityId = id.replace(/^[^-]+-/, '');
+    div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        div === selectedCard ? deselect() : selectCard(div);
+    });
+    parent.appendChild(div);
+}
+
+// 人物カードは全タイムライン通じて同一キャラ1枚制限
+function getUsedPersonIds() {
+    const used = new Set();
+    document.querySelectorAll('.person-dropzone').forEach(zone => {
+        if (zone.children.length > 0) {
+            used.add(zone.children[0].dataset.entityId);
+        }
+    });
+    return used;
+}
+
+function tryMoveCard(card, targetZone) {
+    // 人物カードの重複チェック
+    if (card.dataset.type === 'person') {
+        const used = getUsedPersonIds();
+        // 移動先に同じカードがあれば除いた状態で判定
+        const currentInZone = targetZone.children.length > 0 ? targetZone.children[0].dataset.entityId : null;
+        if (used.has(card.dataset.entityId) && card.dataset.entityId !== currentInZone) {
+            const msgEl = document.getElementById('result-area');
+            msgEl.style.display = 'block';
+            msgEl.className = 'incorrect';
+            msgEl.innerHTML = '';
+            const p = document.createElement('p');
+            p.textContent = `「${card.textContent}」はすでに別のスロットに配置されています。同じ人物を複数のタイムラインに配置することはできません。`;
+            msgEl.appendChild(p);
+            return;
+        }
+    }
+
+    if (targetZone.children.length > 0 && !targetZone.classList.contains('card-pool')) {
+        const existing = targetZone.children[0];
+        const pool = document.getElementById(`${existing.dataset.type}-unsorted-area`);
+        if (pool) pool.appendChild(existing);
+    }
+    targetZone.appendChild(card);
+    deselect();
+    if (hintActive) showHints();
+}
+
+function setupDropzoneClick(zone) {
+    if (zone.dataset.listenerAttached) return;
+    zone.dataset.listenerAttached = 'true';
+    zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedCard && selectedCard.dataset.type === zone.dataset.type) {
+            tryMoveCard(selectedCard, zone);
+        }
+    });
+}
+
+function setupSortable(sourceEl, targetSelector, groupName) {
+    if (typeof Sortable === 'undefined') return;
+    const options = {
+        group: groupName, animation: 150, ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag', delay: 100, delayOnTouchOnly: true,
+        forceFallback: true, fallbackOnBody: true,
+        onStart: () => deselect(),
+        onEnd: (evt) => {
+            // 人物カードのドラッグ後重複チェック
+            if (groupName === 'person') {
+                const card = evt.item;
+                const toEl = evt.to;
+                if (!toEl.classList.contains('card-pool')) {
+                    const used = getUsedPersonIds();
+                    let count = 0;
+                    document.querySelectorAll('.person-dropzone').forEach(z => {
+                        if (z.children.length > 0 && z.children[0].dataset.entityId === card.dataset.entityId) count++;
+                    });
+                    if (count > 1) {
+                        // 重複: 元のプールへ戻す
+                        const pool = document.getElementById('person-unsorted-area');
+                        if (pool) pool.appendChild(card);
+                    }
+                }
+            }
+            if (hintActive) showHints();
+        }
+    };
+    new Sortable(sourceEl, options);
+    document.querySelectorAll(targetSelector).forEach(el => new Sortable(el, options));
+}
+
+function switchTab(evt, type) {
+    evt.stopPropagation();
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active'); b.setAttribute('aria-selected','false');
+    });
+    document.querySelectorAll('.pool-section').forEach(s => s.classList.remove('active'));
+    evt.currentTarget.classList.add('active');
+    evt.currentTarget.setAttribute('aria-selected','true');
+    document.getElementById(`pool-${type}`).classList.add('active');
+    deselect();
+}
+
+function showHints() {
+    document.querySelectorAll('.timeline-slot').forEach(slot => {
+        const tlKey  = slot.dataset.timeline;
+        const slotIdx = parseInt(slot.dataset.slotIndex, 10);
+        const correct = correctAnswers[tlKey][slotIdx];
+        ['person','testimony','evidence'].forEach(type => {
+            const zone = slot.querySelector(`.${type}-dropzone`);
+            if (!zone) return;
+            zone.classList.remove('hint-correct','hint-incorrect','hint-empty');
+            if (zone.children.length === 0) {
+                zone.classList.add('hint-empty');
+            } else {
+                const key = `${type}Id`;
+                zone.classList.add(zone.children[0].dataset.entityId === correct[key] ? 'hint-correct' : 'hint-incorrect');
+            }
+        });
+    });
+}
+
+function clearHints() {
+    document.querySelectorAll('.dropzone').forEach(z => {
+        z.classList.remove('hint-correct','hint-incorrect','hint-empty');
+    });
+}
+
+function checkAnswer() {
+    let allCorrect = true;
+    const feedback = [];
+
+    document.querySelectorAll('.timeline-slot').forEach(slot => {
+        const tlKey   = slot.dataset.timeline;
+        const slotIdx = parseInt(slot.dataset.slotIndex, 10);
+        const correct = correctAnswers[tlKey][slotIdx];
+        const pZone = slot.querySelector('.person-dropzone');
+        const tZone = slot.querySelector('.testimony-dropzone');
+        const eZone = slot.querySelector('.evidence-dropzone');
+        const pOk = pZone.children.length > 0 && pZone.children[0].dataset.entityId === correct.personId;
+        const tOk = tZone.children.length > 0 && tZone.children[0].dataset.entityId === correct.testimonyId;
+        const eOk = eZone.children.length > 0 && eZone.children[0].dataset.entityId === correct.evidenceId;
+        if (!pOk || !tOk || !eOk) {
+            allCorrect = false;
+            const tlLabel = timelineConfig.find(c => c.key === tlKey)?.label || tlKey;
+            feedback.push(`${tlLabel} ${correct.time}スロット：${!pOk?'人物 ':''}${!tOk?'証言 ':''}${!eOk?'証拠品 ':''}が違います`);
+        }
+    });
+
+    const resultArea = document.getElementById('result-area');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = '';
+
+    if (allCorrect) {
+        resultArea.className = 'correct';
+        resultArea.appendChild(document.getElementById('success-template').content.cloneNode(true));
+    } else {
+        resultArea.className = 'incorrect';
+        const msg = document.createElement('p');
+        msg.textContent = '推理が違います。もう一度考えてみてください。';
+        resultArea.appendChild(msg);
+        feedback.forEach(f => {
+            const p = document.createElement('p');
+            p.textContent = f;
+            resultArea.appendChild(p);
+        });
+    }
+    resultArea.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function init() {
+    const tripleArea = document.getElementById('triple-timeline-area');
+
+    timelineConfig.forEach(tlConfig => {
+        const col = document.createElement('div');
+        col.className = 'timeline-column';
+
+        const header = document.createElement('div');
+        header.className = `timeline-column-header ${tlConfig.headerClass}`;
+        header.textContent = `${tlConfig.label}タイムライン`;
+        col.appendChild(header);
+
+        tlConfig.times.forEach((time, slotIdx) => {
+            const slot = document.createElement('div');
+            slot.className = 'timeline-slot';
+            slot.dataset.timeline = tlConfig.key;
+            slot.dataset.slotIndex = slotIdx;
+
+            const label = document.createElement('div');
+            label.className = 'time-label';
+            label.textContent = time;
+            slot.appendChild(label);
+
+            ['person','testimony','evidence'].forEach(type => {
+                const zone = document.createElement('div');
+                zone.className = `dropzone ${type}-dropzone`;
+                zone.dataset.type = type;
+                zone.setAttribute('aria-label', `${tlConfig.label} ${time} ${type}`);
+                setupDropzoneClick(zone);
+                slot.appendChild(zone);
+            });
+
+            col.appendChild(slot);
+        });
+
+        tripleArea.appendChild(col);
+    });
+
+    const personPool    = document.getElementById('person-unsorted-area');
+    const testimonyPool = document.getElementById('testimony-unsorted-area');
+    const evidencePool  = document.getElementById('evidence-unsorted-area');
+
+    persons.forEach(p    => createCard(p.text, p.id, 'person-card',    personPool,    'person'));
+    testimonies.forEach(t => createCard(t.text, t.id, 'testimony-card', testimonyPool, 'testimony'));
+    evidences.forEach(e   => createCard(e.text, e.id, 'evidence-card',  evidencePool,  'evidence'));
+
+    document.querySelectorAll('.card-pool').forEach(pool => {
+        pool.addEventListener('click', (e) => { if (e.target === pool) deselect(); });
+    });
+
+    setupSortable(personPool,    '.person-dropzone',   'person');
+    setupSortable(testimonyPool, '.testimony-dropzone','testimony');
+    setupSortable(evidencePool,  '.evidence-dropzone', 'evidence');
+
+    const hintBtn = document.getElementById('hint-btn');
+    hintBtn.addEventListener('click', () => {
+        hintActive = !hintActive;
+        hintBtn.classList.toggle('active', hintActive);
+        hintBtn.textContent = hintActive ? 'ヒントを隠す' : 'ヒントを見る';
+        hintActive ? showHints() : clearHints();
+    });
+
+    document.getElementById('check-answer-btn').addEventListener('click', checkAnswer);
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card') && !e.target.closest('.dropzone')) deselect();
+    });
+}
+
+init();
+</script>
+</body>
+</html>

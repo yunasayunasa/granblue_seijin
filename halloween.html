@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイムラインミステリ：仮面の宴、逆さまの証言</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
+        integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb"
+        crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a0a2e;
+            --container-bg: #1f0d35;
+            --main-orange: #e65100;
+            --accent-purple: #6a1b9a;
+            --sub-purple: #4a148c;
+            --accent-light: #ff8a65;
+            --text-color: #f3e5f5;
+            --shadow: 0 4px 8px rgba(0,0,0,0.3);
+            --border-radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Shippori Mincho','Hiragino Mincho ProN',serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(rgba(106,27,154,0.15) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            padding: 10px;
+            overscroll-behavior: none;
+        }
+        .game-container {
+            width: 100%; max-width: 1100px; margin: 0 auto;
+            background-color: var(--container-bg);
+            border: 2px solid var(--main-orange);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(230,81,0,0.3);
+            padding: 15px; position: relative;
+        }
+        .game-container::before {
+            content:""; position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+            border:1px solid var(--accent-purple); border-radius:8px; pointer-events:none;
+        }
+        .back-button {
+            position:absolute; top:15px; left:15px;
+            padding:8px 16px; background:var(--accent-purple); color:#fff;
+            border:none; border-radius:20px; cursor:pointer;
+            font-family:inherit; font-size:0.9em; transition:all 0.3s;
+        }
+        .back-button:hover { background:#7b1fa2; transform:translateY(-2px); }
+        h1 {
+            color: var(--accent-light); text-align:center;
+            border-bottom: 3px double var(--main-orange);
+            padding-bottom:10px; font-size:1.8em;
+            letter-spacing:0.1em; margin:10px 0 20px;
+        }
+        .story-text {
+            line-height:1.6; margin-bottom:20px;
+            text-align:center; font-size:0.95em; color:#e1bee7;
+        }
+        .reverse-notice {
+            text-align:center; font-size:0.9em;
+            background:rgba(106,27,154,0.3); border:1px solid var(--accent-purple);
+            border-radius:6px; padding:8px 16px; margin-bottom:16px;
+            color:#ce93d8;
+        }
+        .area-title {
+            font-weight:bold; font-size:1.2em;
+            margin:20px 0 15px; padding-left:15px;
+            border-left:6px solid var(--main-orange);
+            color:var(--accent-light);
+            background:linear-gradient(90deg,rgba(230,81,0,0.15) 0%,rgba(0,0,0,0) 100%);
+        }
+        .instruction-text {
+            font-size:0.85em; color:#b39ddb;
+            margin-bottom:10px; text-align:center;
+            background:rgba(255,255,255,0.05); padding:5px; border-radius:4px;
+        }
+
+        /* --- タブ --- */
+        .tab-container {
+            display:flex; gap:5px; margin-bottom:0;
+            border-bottom:2px solid var(--main-orange); padding-left:10px;
+        }
+        .tab-btn {
+            padding:12px 20px; background-color:rgba(255,255,255,0.05);
+            border:1px solid var(--sub-purple); border-bottom:none;
+            cursor:pointer; font-family:inherit; color:var(--text-color);
+            border-radius:8px 8px 0 0; transition:all 0.2s; font-weight:bold;
+        }
+        .tab-btn.active {
+            background-color:var(--container-bg); border-color:var(--main-orange);
+            border-bottom:2px solid var(--container-bg); color:var(--accent-light);
+            transform:translateY(2px);
+        }
+        .card-pool-container {
+            background-color:rgba(0,0,0,0.2);
+            border:1px solid var(--sub-purple); border-top:none;
+            border-radius:0 0 8px 8px; min-height:100px; margin-bottom:20px;
+        }
+        .pool-section { display:none; padding:15px; animation:fadeIn 0.3s ease; }
+        .pool-section.active { display:block; }
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(-5px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .card-pool {
+            min-height:80px; display:flex; flex-wrap:wrap; gap:10px;
+        }
+
+        /* --- カード共通 --- */
+        .card {
+            background-color:#2d1a4a; border:1px solid #4a2e6e; border-radius:6px;
+            padding:12px; cursor:grab; box-shadow:0 2px 4px rgba(0,0,0,0.3);
+            font-size:0.95em; position:relative; touch-action:none;
+            user-select:none; transition:background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .card.selected {
+            background-color:#3d2060; border:2px solid var(--main-orange);
+            transform:scale(1.05); box-shadow:0 5px 15px rgba(230,81,0,0.4); z-index:10;
+        }
+        .sortable-ghost { opacity:0.4; background-color:#4a2e6e; border:2px dashed var(--main-orange); }
+        .sortable-drag {
+            cursor:grabbing; opacity:1; background-color:#3d2060;
+            box-shadow:0 10px 20px rgba(0,0,0,0.5);
+            transform:scale(1.05) rotate(2deg); border:2px solid var(--accent-light);
+        }
+        .person-card {
+            border-left:5px solid var(--main-orange);
+            min-width:100px; text-align:center; font-weight:bold;
+        }
+        .testimony-card { border-left:5px solid #ce93d8; width:100%; max-width:400px; }
+        .evidence-card {
+            border-left:5px solid var(--accent-purple);
+            min-width:120px; text-align:center; font-weight:bold;
+            background-color:#1e1030;
+        }
+
+        /* --- タイムライン --- */
+        .timeline { display:flex; flex-direction:column; gap:15px; }
+        .timeline-slot {
+            background-color:#1a0a2e; border:1px solid var(--sub-purple);
+            border-radius:var(--border-radius); padding:15px;
+            display:grid;
+            grid-template-columns: 80px 140px 1fr 160px;
+            gap:10px; align-items:center;
+            box-shadow:0 2px 5px rgba(0,0,0,0.2); position:relative;
+        }
+        .timeline-slot::before {
+            content:""; position:absolute; left:40px; top:-20px; bottom:-20px;
+            width:2px; background-color:var(--sub-purple); z-index:0;
+        }
+        .timeline-slot:first-child::before { top:50%; }
+        .timeline-slot:last-child::before  { bottom:50%; }
+        .time-label {
+            font-weight:bold; color:var(--accent-light); text-align:center;
+            font-size:1.1em; z-index:1; background:#1a0a2e; padding:5px;
+            border:1px solid var(--sub-purple); border-radius:4px;
+        }
+        .dropzone {
+            min-height:70px; background-color:#160827;
+            border:2px dashed #4a2e6e; border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.2s; z-index:1;
+        }
+        .dropzone.highlight-target {
+            background-color:#1e1040; border-color:var(--main-orange); cursor:pointer;
+        }
+        .testimony-dropzone { padding:5px; }
+
+        /* ヒント */
+        .dropzone.hint-correct {
+            border:3px solid #2196f3; background-color:rgba(33,150,243,0.1);
+            box-shadow:0 0 15px rgba(33,150,243,0.5); animation:pulse-blue 1.5s infinite;
+        }
+        .dropzone.hint-incorrect {
+            border:3px solid #f44336; background-color:rgba(244,67,54,0.1);
+            box-shadow:0 0 15px rgba(244,67,54,0.5); animation:pulse-red 1.5s infinite;
+        }
+        .dropzone.hint-empty {
+            border:3px solid #ffc107; background-color:rgba(255,193,7,0.1);
+            box-shadow:0 0 15px rgba(255,193,7,0.5); animation:pulse-yellow 1.5s infinite;
+        }
+        @keyframes pulse-blue {
+            0%,100%{box-shadow:0 0 15px rgba(33,150,243,0.5);}
+            50%{box-shadow:0 0 25px rgba(33,150,243,0.8);}
+        }
+        @keyframes pulse-red {
+            0%,100%{box-shadow:0 0 15px rgba(244,67,54,0.5);}
+            50%{box-shadow:0 0 25px rgba(244,67,54,0.8);}
+        }
+        @keyframes pulse-yellow {
+            0%,100%{box-shadow:0 0 15px rgba(255,193,7,0.5);}
+            50%{box-shadow:0 0 25px rgba(255,193,7,0.8);}
+        }
+
+        /* --- ボタン --- */
+        .button-container {
+            text-align:center; margin-top:40px;
+            display:flex; justify-content:center; gap:15px; flex-wrap:wrap;
+        }
+        .hint-btn {
+            background-color:#6a1b9a; color:#fff; border:none;
+            padding:12px 30px; font-size:1.1em; border-radius:25px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 8px rgba(106,27,154,0.4); transition:all 0.3s;
+        }
+        .hint-btn:hover { background-color:#7b1fa2; transform:translateY(-2px); }
+        .hint-btn.active { background-color:#4a148c; }
+        #check-answer-btn {
+            background-color:var(--main-orange); color:#fff; border:none;
+            padding:15px 40px; font-size:1.2em; border-radius:30px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 10px rgba(230,81,0,0.4); transition:all 0.3s;
+        }
+        #check-answer-btn:hover { background-color:#bf360c; transform:translateY(-2px); }
+
+        /* --- 結果 --- */
+        #result-area {
+            margin-top:30px; padding:20px; border-radius:8px;
+            line-height:1.8; white-space:pre-wrap; display:none;
+        }
+        .correct  { background-color:#1b2e1b; border:1px solid #4caf50; color:#a5d6a7; }
+        .incorrect{ background-color:#2e1b1b; border:1px solid #ef9a9a; color:#ffcdd2; }
+
+        /* --- モバイル --- */
+        @media (max-width: 900px) {
+            body { padding:5px; }
+            .game-container { padding:10px; }
+            h1 { font-size:1.5em; }
+            .timeline-slot {
+                grid-template-columns:1fr;
+                grid-template-rows:auto auto auto auto;
+                gap:8px; padding-bottom:20px; margin-bottom:15px;
+            }
+            .timeline-slot::before { left:20px; }
+            .time-label { text-align:left; width:fit-content; margin-bottom:5px; }
+            .dropzone { min-height:60px; }
+            .testimony-card { font-size:0.9em; }
+        }
+
+        /* フォーカス */
+        .tab-btn:focus-visible,
+        .hint-btn:focus-visible,
+        #check-answer-btn:focus-visible,
+        .back-button:focus-visible {
+            outline:none; box-shadow:0 0 0 3px rgba(230,81,0,0.5);
+        }
+
+        /* アニメーション低減 */
+        @media (prefers-reduced-motion: reduce) {
+            *,*::before,*::after {
+                animation-duration:0.01ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <button class="back-button" onclick="location.href='index.html'">← 戻る</button>
+    <h1>仮面の宴、逆さまの証言</h1>
+    <div class="story-text">
+        <p>10月31日の夜、グランサイファーのメインホールでハロウィン仮面舞踏会が催された。<br>
+        22時、「幻燈籠が消えた！」の声が上がった。<br>
+        5人の証言は<b>時系列の逆順</b>で届いている——最新から過去へと遡り、真相を解き明かせ。</p>
+    </div>
+    <div class="reverse-notice">※ 最新の出来事が上に表示されます。下へ遡って真相を解き明かせ。</div>
+
+    <!-- タブ -->
+    <div class="tab-container" role="tablist" aria-label="カード種別">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="pool-person"    onclick="switchTab(event,'person')">人物</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-testimony" onclick="switchTab(event,'testimony')">証言</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-evidence"  onclick="switchTab(event,'evidence')">証拠品</button>
+    </div>
+
+    <div class="card-pool-container">
+        <div id="pool-person"    class="pool-section active" role="tabpanel" aria-label="人物カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="person-unsorted-area"    class="card-pool" data-type="person"></div>
+        </div>
+        <div id="pool-testimony" class="pool-section" role="tabpanel" aria-label="証言カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="testimony-unsorted-area" class="card-pool" data-type="testimony"></div>
+        </div>
+        <div id="pool-evidence"  class="pool-section" role="tabpanel" aria-label="証拠品カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="evidence-unsorted-area"  class="card-pool" data-type="evidence"></div>
+        </div>
+    </div>
+
+    <div class="area-title">タイムライン</div>
+    <div id="timeline-area" class="timeline"></div>
+
+    <div class="button-container">
+        <button id="hint-btn" class="hint-btn">ヒントを見る</button>
+        <button id="check-answer-btn">推理する</button>
+    </div>
+    <div id="result-area"></div>
+
+    <template id="success-template">
+        <h3>【見事な推理です！】</h3>
+        <p>真相はこうでした。</p>
+        <p>
+            カリオストロは幻燈籠の「金色の特殊光」が錬金実験に必要だと判断し、宴の隙を見て持ち出した。<br>
+            「終わったら絶対に返す」つもりだったが、実験が予想以上に長引いて騒ぎになってしまった。<br>
+            証拠品「錬金術の小瓶」と「VIPルームにいた」という証言の矛盾が決め手。
+        </p>
+        <p><b>推理の鍵（逆順で読み解く）：</b><br>
+            ①22:00 書き置きに「実験」の文字 → 錬金術師が関与<br>
+            ②21:00 裏倉庫で発見 → 人気のない場所に移された<br>
+            ③20:00 小柄な黒マント → カリオストロの体格と一致<br>
+            ④19:00 台座周辺をうろつく → 持ち出す機会を伺っていた<br>
+            ⑤18:00 確かに台座にあった → ゼタが設置した直後は無事
+        </p>
+    </template>
+</div>
+<script>
+// ===== データ定義 =====
+// System B: 逆順タイムライン (22:00→18:00、order:1が画面最上部=22:00)
+const timeSlots = ['22:00','21:00','20:00','19:00','18:00'];
+
+const persons = [
+    { id:'person-siete',      text:'シエテ',       type:'person' },
+    { id:'person-narmaya',    text:'ナルメア',     type:'person' },
+    { id:'person-beatrix',    text:'ベアトリクス', type:'person' },
+    { id:'person-vaseraga',   text:'バザラガ',     type:'person' },
+    { id:'person-zeta',       text:'ゼタ',         type:'person' },
+    { id:'person-cagliostro', text:'カリオストロ', type:'person' },
+    { id:'person-vee',        text:'ビィ',         type:'person' }
+];
+
+const testimonies = [
+    { id:'testimony-t_siete', text:'「ようやく全容が分かった。幻燈籠は裏倉庫で無事だったよ。そこに一枚、書き置きが添えてあった——"実験に借用。後で必ず戻す"とだけ書いてあった。誰が書いたかは……まあ、大体察しがつくけどね」', type:'testimony' },
+    { id:'testimony-t_narme', text:'「廊下の奥の扉がほんの少し開いていたよ。気になって覗いてみたら、裏倉庫の棚の上で幻燈籠がひっそりと金色に光っていたよ。まさかこんな場所にあるとは思わなかったから、急いで皆を呼んだよ」', type:'testimony' },
+    { id:'testimony-t_beatrix', text:'「20時ごろ廊下を歩いていたんだよ！大きな黒マントのコスチュームを着た人物が幻燈籠を抱えて足早に歩いていたんだ！声をかけようとしたが角を曲がって消えたんだ！仮面で顔は見えなかったが、かなり小柄な体格だった——これは確かだ」', type:'testimony' },
+    { id:'testimony-t_vasa', text:'「19時頃から台座の周りをうろついている仮面の人物が気になっていた。黒マントで体格が小さく、台座に近づいては離れることを繰り返していた。声をかけようとしたが、人混みで見失ってしまった。あの時に止めていれば……」', type:'testimony' },
+    { id:'testimony-t_zeta', text:'「宴の準備で、18時に幻燈籠をホール中央の台座に飾り付けたのよ。金色に輝く立派な燈籠で、今年の目玉装飾にするつもりだったのよ。セットした時点ではちゃんと台座に固定してあったわよ——まさか消えちゃうとは思わなかったなあ」', type:'testimony' },
+    { id:'testimony-t_caglio', text:'（ダミー）「幻燈籠？俺様はずっとVIPルームで研究してたんだぜ。廊下なんか一度も通ってないし、裏倉庫なんか知らないな。……なんで俺様の錬金道具が裏倉庫に落ちてるかって？そ、それは誰かが持ち込んだに決まってるだろ！俺様は無関係だぜ！」', type:'testimony' },
+    { id:'testimony-t_vee', text:'（ダミー）「おいら仮装でかぼちゃ頭してたからよく見えなかったんだけど、誰かが廊下をすごい速さで走っていったぜ。なんか光るもの抱えてたような……あ、でも方向は裏じゃなくてホールの方だったかも。自信ない！」', type:'testimony' }
+];
+
+const evidences = [
+    { id:'evidence-e_resolution',    text:'裏倉庫に残された謎の書き置き（「実験が終わったら戻す」）', type:'evidence' },
+    { id:'evidence-e_hidden_room',   text:'裏倉庫の棚（幻燈籠の置かれた跡と金色の光の染み）', type:'evidence' },
+    { id:'evidence-e_costume_trace', text:'廊下の石床に落ちた黒マントの繊維', type:'evidence' },
+    { id:'evidence-e_suspicion',     text:'台座周辺の足跡（小柄な人物が行き来した跡）', type:'evidence' },
+    { id:'evidence-e_lantern_setup', text:'台座に固定された幻燈籠（宴開始時の記録）', type:'evidence' },
+    { id:'evidence-e_alchemy',       text:'（ダミー）裏倉庫に落ちていた錬金術の小瓶', type:'evidence' },
+    { id:'evidence-e_pumpkin',       text:'（ダミー）こぼれたかぼちゃスープの染み（無関係の参加者のもの）', type:'evidence' }
+];
+
+// order:1 = 22:00（画面最上部）、order:5 = 18:00（画面最下部）
+const correctLinkage = [
+    { order:1, time:'22:00', personId:'siete',    testimonyId:'t_siete',   evidenceId:'e_resolution'    },
+    { order:2, time:'21:00', personId:'narmaya',  testimonyId:'t_narme',   evidenceId:'e_hidden_room'   },
+    { order:3, time:'20:00', personId:'beatrix',  testimonyId:'t_beatrix', evidenceId:'e_costume_trace' },
+    { order:4, time:'19:00', personId:'vaseraga', testimonyId:'t_vasa',    evidenceId:'e_suspicion'     },
+    { order:5, time:'18:00', personId:'zeta',     testimonyId:'t_zeta',    evidenceId:'e_lantern_setup' }
+];
+
+// ===== ゲームロジック =====
+let selectedCard = null;
+let hintActive = false;
+
+function deselect() {
+    if (selectedCard) {
+        selectedCard.classList.remove('selected');
+        selectedCard = null;
+    }
+    document.querySelectorAll('.dropzone').forEach(z => z.classList.remove('highlight-target'));
+}
+
+function selectCard(card) {
+    deselect();
+    selectedCard = card;
+    card.classList.add('selected');
+    document.querySelectorAll('.dropzone').forEach(z => {
+        if (z.dataset.type === card.dataset.type) z.classList.add('highlight-target');
+    });
+}
+
+function createCard(text, id, className, parent, type) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.id = id;
+    div.className = `card ${className}`;
+    div.dataset.type = type;
+    div.dataset.entityId = id.replace(/^[^-]+-/, '');
+    div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        div === selectedCard ? deselect() : selectCard(div);
+    });
+    parent.appendChild(div);
+}
+
+function tryMoveCard(card, targetZone) {
+    if (targetZone.children.length > 0 && !targetZone.classList.contains('card-pool')) {
+        const existing = targetZone.children[0];
+        const pool = document.getElementById(`${existing.dataset.type}-unsorted-area`);
+        if (pool) pool.appendChild(existing);
+    }
+    targetZone.appendChild(card);
+    deselect();
+    if (hintActive) showHints();
+}
+
+function setupDropzoneClick(zone) {
+    if (zone.dataset.listenerAttached) return;
+    zone.dataset.listenerAttached = 'true';
+    zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedCard && selectedCard.dataset.type === zone.dataset.type) {
+            tryMoveCard(selectedCard, zone);
+        }
+    });
+}
+
+function setupSortable(sourceEl, targetSelector, groupName) {
+    if (typeof Sortable === 'undefined') return;
+    const options = {
+        group: groupName, animation: 150, ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag', delay: 100, delayOnTouchOnly: true,
+        forceFallback: true, fallbackOnBody: true,
+        onStart: () => deselect(),
+        onEnd: () => { if (hintActive) showHints(); }
+    };
+    new Sortable(sourceEl, options);
+    document.querySelectorAll(targetSelector).forEach(el => new Sortable(el, options));
+}
+
+function switchTab(evt, type) {
+    evt.stopPropagation();
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active'); b.setAttribute('aria-selected','false');
+    });
+    document.querySelectorAll('.pool-section').forEach(s => s.classList.remove('active'));
+    evt.currentTarget.classList.add('active');
+    evt.currentTarget.setAttribute('aria-selected','true');
+    document.getElementById(`pool-${type}`).classList.add('active');
+    deselect();
+}
+
+function showHints() {
+    document.querySelectorAll('.timeline-slot').forEach((slot, idx) => {
+        const correct = correctLinkage[idx];
+        ['person','testimony','evidence'].forEach(type => {
+            const zone = slot.querySelector(`.${type}-dropzone`);
+            if (!zone) return;
+            zone.classList.remove('hint-correct','hint-incorrect','hint-empty');
+            if (zone.children.length === 0) {
+                zone.classList.add('hint-empty');
+            } else {
+                const card = zone.children[0];
+                const key = `${type}Id`;
+                zone.classList.add(card.dataset.entityId === correct[key] ? 'hint-correct' : 'hint-incorrect');
+            }
+        });
+    });
+}
+
+function clearHints() {
+    document.querySelectorAll('.dropzone').forEach(z => {
+        z.classList.remove('hint-correct','hint-incorrect','hint-empty');
+    });
+}
+
+function checkAnswer() {
+    let allCorrect = true;
+    const feedback = [];
+
+    document.querySelectorAll('.timeline-slot').forEach((slot, idx) => {
+        const correct = correctLinkage[idx];
+        const pZone = slot.querySelector('.person-dropzone');
+        const tZone = slot.querySelector('.testimony-dropzone');
+        const eZone = slot.querySelector('.evidence-dropzone');
+
+        const pOk = pZone.children.length > 0 && pZone.children[0].dataset.entityId === correct.personId;
+        const tOk = tZone.children.length > 0 && tZone.children[0].dataset.entityId === correct.testimonyId;
+        const eOk = eZone.children.length > 0 && eZone.children[0].dataset.entityId === correct.evidenceId;
+
+        if (!pOk || !tOk || !eOk) {
+            allCorrect = false;
+            feedback.push(`${correct.time}スロット：${!pOk?'人物 ':''}${!tOk?'証言 ':''}${!eOk?'証拠品 ':''}が違います`);
+        }
+    });
+
+    const resultArea = document.getElementById('result-area');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = '';
+
+    if (allCorrect) {
+        resultArea.className = 'correct';
+        resultArea.appendChild(document.getElementById('success-template').content.cloneNode(true));
+    } else {
+        resultArea.className = 'incorrect';
+        const msg = document.createElement('p');
+        msg.textContent = '推理が違います。もう一度考えてみてください。';
+        resultArea.appendChild(msg);
+        feedback.forEach(f => {
+            const p = document.createElement('p');
+            p.textContent = f;
+            resultArea.appendChild(p);
+        });
+    }
+    resultArea.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function init() {
+    const timelineArea = document.getElementById('timeline-area');
+    timeSlots.forEach((time, idx) => {
+        const slot = document.createElement('div');
+        slot.className = 'timeline-slot';
+        slot.dataset.slotIndex = idx;
+
+        const label = document.createElement('div');
+        label.className = 'time-label';
+        label.textContent = time;
+        slot.appendChild(label);
+
+        ['person','testimony','evidence'].forEach(type => {
+            const zone = document.createElement('div');
+            zone.className = `dropzone ${type}-dropzone`;
+            zone.dataset.type = type;
+            zone.setAttribute('aria-label', `${time} ${type}`);
+            setupDropzoneClick(zone);
+            slot.appendChild(zone);
+        });
+
+        timelineArea.appendChild(slot);
+    });
+
+    const personPool = document.getElementById('person-unsorted-area');
+    persons.forEach(p => createCard(p.text, p.id, 'person-card', personPool, 'person'));
+
+    const testimonyPool = document.getElementById('testimony-unsorted-area');
+    testimonies.forEach(t => createCard(t.text, t.id, 'testimony-card', testimonyPool, 'testimony'));
+
+    const evidencePool = document.getElementById('evidence-unsorted-area');
+    evidences.forEach(e => createCard(e.text, e.id, 'evidence-card', evidencePool, 'evidence'));
+
+    document.querySelectorAll('.card-pool').forEach(pool => {
+        pool.addEventListener('click', (e) => { if (e.target === pool) deselect(); });
+    });
+
+    setupSortable(personPool,    '.person-dropzone',   'person');
+    setupSortable(testimonyPool, '.testimony-dropzone','testimony');
+    setupSortable(evidencePool,  '.evidence-dropzone', 'evidence');
+
+    const hintBtn = document.getElementById('hint-btn');
+    hintBtn.addEventListener('click', () => {
+        hintActive = !hintActive;
+        hintBtn.classList.toggle('active', hintActive);
+        hintBtn.textContent = hintActive ? 'ヒントを隠す' : 'ヒントを見る';
+        hintActive ? showHints() : clearHints();
+    });
+
+    document.getElementById('check-answer-btn').addEventListener('click', checkAnswer);
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card') && !e.target.closest('.dropzone')) deselect();
+    });
+}
+
+init();
+</script>
+</body>
+</html>

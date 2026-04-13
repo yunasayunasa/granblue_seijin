@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイムラインミステリ：消えた破魔矢</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdfaf6;
+            --container-bg: #fffbf0;
+            --main-red: #c62828;
+            --accent-gold: #f9a825;
+            --sub-gold: #fce4b0;
+            --text-color: #3e2723;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Shippori Mincho','Hiragino Mincho ProN',serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#fce4b0 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            padding: 10px;
+            overscroll-behavior: none;
+        }
+        .game-container {
+            width: 100%; max-width: 1100px; margin: 0 auto;
+            background-color: var(--container-bg);
+            border: 2px solid var(--accent-gold);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            padding: 15px; position: relative;
+        }
+        .game-container::before {
+            content:""; position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+            border:1px solid var(--sub-gold); border-radius:8px; pointer-events:none;
+        }
+        .back-button {
+            position:absolute; top:15px; left:15px;
+            padding:8px 16px; background:var(--accent-gold); color:#fff;
+            border:none; border-radius:20px; cursor:pointer;
+            font-family:inherit; font-size:0.9em; transition:all 0.3s;
+        }
+        .back-button:hover { background:#e69a00; transform:translateY(-2px); }
+        h1 {
+            color: var(--main-red); text-align:center;
+            border-bottom: 3px double var(--accent-gold);
+            padding-bottom:10px; font-size:1.8em;
+            letter-spacing:0.1em; margin:10px 0 20px;
+        }
+        .story-text {
+            line-height:1.6; margin-bottom:20px;
+            text-align:center; font-size:0.95em;
+        }
+        .area-title {
+            font-weight:bold; font-size:1.2em;
+            margin:20px 0 15px; padding-left:15px;
+            border-left:6px solid var(--main-red);
+            color:var(--main-red);
+            background:linear-gradient(90deg,rgba(198,40,40,0.1) 0%,rgba(255,255,255,0) 100%);
+        }
+        .instruction-text {
+            font-size:0.85em; color:#795548;
+            margin-bottom:10px; text-align:center;
+            background:rgba(255,255,255,0.7); padding:5px; border-radius:4px;
+        }
+
+        /* --- タブ --- */
+        .tab-container {
+            display:flex; gap:5px; margin-bottom:0;
+            border-bottom:2px solid var(--accent-gold); padding-left:10px;
+        }
+        .tab-btn {
+            padding:12px 20px; background-color:rgba(255,255,255,0.4);
+            border:1px solid var(--sub-gold); border-bottom:none;
+            cursor:pointer; font-family:inherit; color:var(--text-color);
+            border-radius:8px 8px 0 0; transition:all 0.2s; font-weight:bold;
+        }
+        .tab-btn.active {
+            background-color:var(--container-bg); border-color:var(--accent-gold);
+            border-bottom:2px solid var(--container-bg); color:var(--main-red);
+            transform:translateY(2px);
+        }
+        .card-pool-container {
+            background-color:rgba(255,255,255,0.6);
+            border:1px solid var(--sub-gold); border-top:none;
+            border-radius:0 0 8px 8px; min-height:100px; margin-bottom:20px;
+        }
+        .pool-section { display:none; padding:15px; animation:fadeIn 0.3s ease; }
+        .pool-section.active { display:block; }
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(-5px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .card-pool {
+            min-height:80px; display:flex; flex-wrap:wrap; gap:10px;
+        }
+
+        /* --- カード共通 --- */
+        .card {
+            background-color:#fff; border:1px solid #ddd; border-radius:6px;
+            padding:12px; cursor:grab; box-shadow:0 2px 4px rgba(0,0,0,0.05);
+            font-size:0.95em; position:relative; touch-action:none;
+            user-select:none; transition:background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .card.selected {
+            background-color:#fff8e1; border:2px solid var(--main-red);
+            transform:scale(1.05); box-shadow:0 5px 15px rgba(198,40,40,0.2); z-index:10;
+        }
+        .sortable-ghost { opacity:0.4; background-color:#fff9c4; border:2px dashed #fbc02d; }
+        .sortable-drag {
+            cursor:grabbing; opacity:1; background-color:#fff;
+            box-shadow:0 10px 20px rgba(0,0,0,0.2);
+            transform:scale(1.05) rotate(2deg); border:2px solid var(--accent-gold);
+        }
+        .person-card {
+            border-left:5px solid var(--main-red);
+            min-width:100px; text-align:center; font-weight:bold;
+        }
+        .testimony-card { border-left:5px solid #5d4037; width:100%; max-width:400px; }
+        .evidence-card {
+            border-left:5px solid var(--accent-gold);
+            min-width:120px; text-align:center; font-weight:bold;
+            background-color:#fffcf5;
+        }
+        .location-card {
+            border-left:5px solid #5c6bc0;
+            min-width:120px; text-align:center; font-weight:bold;
+            background-color:#e8eaf6;
+        }
+
+        /* --- タイムライン --- */
+        .timeline { display:flex; flex-direction:column; gap:15px; }
+        .timeline-slot {
+            background-color:#fff; border:1px solid var(--sub-gold);
+            border-radius:var(--border-radius); padding:15px;
+            display:grid;
+            grid-template-columns: 80px 140px 1fr 160px 160px;
+            gap:10px; align-items:center;
+            box-shadow:0 2px 5px rgba(0,0,0,0.02); position:relative;
+        }
+        .timeline-slot::before {
+            content:""; position:absolute; left:40px; top:-20px; bottom:-20px;
+            width:2px; background-color:var(--sub-gold); z-index:0;
+        }
+        .timeline-slot:first-child::before { top:50%; }
+        .timeline-slot:last-child::before  { bottom:50%; }
+        .time-label {
+            font-weight:bold; color:var(--main-red); text-align:center;
+            font-size:1.1em; z-index:1; background:#fff; padding:5px;
+            border:1px solid var(--sub-gold); border-radius:4px;
+        }
+        .dropzone {
+            min-height:70px; background-color:#fafafa;
+            border:2px dashed #e0e0e0; border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.2s; z-index:1;
+        }
+        .dropzone.highlight-target {
+            background-color:#e3f2fd; border-color:#2196f3; cursor:pointer;
+        }
+        .testimony-dropzone { padding:5px; }
+
+        /* ヒント */
+        .dropzone.hint-correct {
+            border:3px solid #2196f3; background-color:rgba(33,150,243,0.1);
+            box-shadow:0 0 15px rgba(33,150,243,0.5); animation:pulse-blue 1.5s infinite;
+        }
+        .dropzone.hint-incorrect {
+            border:3px solid #f44336; background-color:rgba(244,67,54,0.1);
+            box-shadow:0 0 15px rgba(244,67,54,0.5); animation:pulse-red 1.5s infinite;
+        }
+        .dropzone.hint-empty {
+            border:3px solid #ffc107; background-color:rgba(255,193,7,0.1);
+            box-shadow:0 0 15px rgba(255,193,7,0.5); animation:pulse-yellow 1.5s infinite;
+        }
+        @keyframes pulse-blue {
+            0%,100%{box-shadow:0 0 15px rgba(33,150,243,0.5);}
+            50%{box-shadow:0 0 25px rgba(33,150,243,0.8);}
+        }
+        @keyframes pulse-red {
+            0%,100%{box-shadow:0 0 15px rgba(244,67,54,0.5);}
+            50%{box-shadow:0 0 25px rgba(244,67,54,0.8);}
+        }
+        @keyframes pulse-yellow {
+            0%,100%{box-shadow:0 0 15px rgba(255,193,7,0.5);}
+            50%{box-shadow:0 0 25px rgba(255,193,7,0.8);}
+        }
+
+        /* --- ボタン --- */
+        .button-container {
+            text-align:center; margin-top:40px;
+            display:flex; justify-content:center; gap:15px; flex-wrap:wrap;
+        }
+        .hint-btn {
+            background-color:#ffc107; color:#333; border:none;
+            padding:12px 30px; font-size:1.1em; border-radius:25px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 8px rgba(255,193,7,0.4); transition:all 0.3s;
+        }
+        .hint-btn:hover { background-color:#ffb300; transform:translateY(-2px); }
+        .hint-btn.active { background-color:#ff9800; }
+        #check-answer-btn {
+            background-color:var(--main-red); color:#fff; border:none;
+            padding:15px 40px; font-size:1.2em; border-radius:30px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 10px rgba(198,40,40,0.4); transition:all 0.3s;
+        }
+        #check-answer-btn:hover { background-color:#b71c1c; transform:translateY(-2px); }
+
+        /* --- 結果 --- */
+        #result-area {
+            margin-top:30px; padding:20px; border-radius:8px;
+            line-height:1.8; white-space:pre-wrap; display:none;
+        }
+        .correct  { background-color:#f1f8e9; border:1px solid #8bc34a; color:#2e7d32; }
+        .incorrect{ background-color:#ffebee; border:1px solid #ef9a9a; color:#c62828; }
+
+        /* --- モバイル --- */
+        @media (max-width: 900px) {
+            body { padding:5px; }
+            .game-container { padding:10px; }
+            h1 { font-size:1.5em; }
+            .timeline-slot {
+                grid-template-columns:1fr;
+                grid-template-rows:auto auto auto auto auto;
+                gap:8px; padding-bottom:20px; margin-bottom:15px;
+            }
+            .timeline-slot::before { left:20px; }
+            .time-label { text-align:left; width:fit-content; margin-bottom:5px; }
+            .dropzone { min-height:60px; }
+            .testimony-card { font-size:0.9em; }
+        }
+
+        /* フォーカス */
+        .tab-btn:focus-visible,
+        .hint-btn:focus-visible,
+        #check-answer-btn:focus-visible,
+        .back-button:focus-visible {
+            outline:none; box-shadow:0 0 0 3px rgba(198,40,40,0.4);
+        }
+
+        /* アニメーション低減 */
+        @media (prefers-reduced-motion: reduce) {
+            *,*::before,*::after {
+                animation-duration:0.01ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <button class="back-button" onclick="location.href='index.html'">← 戻る</button>
+    <h1>消えた破魔矢</h1>
+    <div class="story-text">
+        <p>元日の朝、総空神宮の初詣で神降ろしの儀式に用いる<b>破魔矢</b>が行方不明になった。<br>
+        5人の目撃証言・証拠品・場所を正しく並べ、破魔矢の行方を突き止めよ。</p>
+    </div>
+
+    <!-- タブ -->
+    <div class="tab-container" role="tablist" aria-label="カード種別">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="pool-person"   onclick="switchTab(event,'person')">人物</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-testimony" onclick="switchTab(event,'testimony')">証言</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-evidence"  onclick="switchTab(event,'evidence')">証拠品</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-location"  onclick="switchTab(event,'location')">場所</button>
+    </div>
+
+    <div class="card-pool-container">
+        <div id="pool-person"   class="pool-section active" role="tabpanel" aria-label="人物カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="person-unsorted-area"   class="card-pool" data-type="person"></div>
+        </div>
+        <div id="pool-testimony" class="pool-section" role="tabpanel" aria-label="証言カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="testimony-unsorted-area" class="card-pool" data-type="testimony"></div>
+        </div>
+        <div id="pool-evidence"  class="pool-section" role="tabpanel" aria-label="証拠品カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="evidence-unsorted-area"  class="card-pool" data-type="evidence"></div>
+        </div>
+        <div id="pool-location"  class="pool-section" role="tabpanel" aria-label="場所カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="location-unsorted-area"  class="card-pool" data-type="location"></div>
+        </div>
+    </div>
+
+    <div class="area-title">タイムライン</div>
+    <div id="timeline-area" class="timeline"></div>
+
+    <div class="button-container">
+        <button id="hint-btn" class="hint-btn">ヒントを見る</button>
+        <button id="check-answer-btn">推理する</button>
+    </div>
+    <div id="result-area"></div>
+
+    <template id="success-template">
+        <h3>【見事な推理です！】</h3>
+        <p>真相はこうでした。</p>
+        <p>
+            バイシュラは儀式の順路（授与所→拝殿前→参道→宝物庫）を誰にも告げずに破魔矢を参道へ置いた。<br>
+            ユエルは「参道に置いておく」よう頼まれてそこへ運んだが、無人の矢を見つけたビィが<br>
+            「倒れそうでかわいそう」と松飾りの根元に立てかけ直してしまった。<br>
+            ユエルが発見し、ルリアと共に宝物庫へ無事収納。破魔矢は消えてなどいなかった。
+        </p>
+        <p><b>推理の鍵：</b><br>
+            ①サンダルフォン「11時に参道で誰もいなかった」<br>
+            ②ユエル「12:30に確認したら松飾りへ移動していた」<br>
+            ③ビィ「参道で矢を拾って松飾りに立てかけた」<br>
+            → 11:00〜12:30の空白にビィが動かしたことが導き出せる。
+        </p>
+    </template>
+</div>
+<script>
+// ===== データ定義 =====
+const timeSlots = ['09:00','10:00','11:00','12:30','14:00'];
+
+const persons = [
+    { id:'person-baishra',    text:'バイシュラ',     type:'person' },
+    { id:'person-societte',   text:'ソシエ',         type:'person' },
+    { id:'person-sandalphon', text:'サンダルフォン', type:'person' },
+    { id:'person-yuel',       text:'ユエル',         type:'person' },
+    { id:'person-lyria',      text:'ルリア',         type:'person' },
+    { id:'person-vee',        text:'ビィ',           type:'person' },
+    { id:'person-io',         text:'イオ',           type:'person' }
+];
+
+const testimonies = [
+    { id:'testimony-t_baishra', text:'「本日の神降ろしに用いる破魔矢を授与所で受け取り、儀式の順路へ置いてきた。順路は授与所→拝殿前→参道→宝物庫の順に巡るもの。ただし、その旨を皆に伝えていなかったのは……私の落ち度であった」', type:'testimony' },
+    { id:'testimony-t_societte', text:'「拝殿の前でユエルが走ってくるの見てん。手に立派な矢を抱えてはって、"バイシュラはんに頼まれてん"て言うてたわ。そのまま参道の方へ駆けていったで。なんや急いでそうやったなあ」', type:'testimony' },
+    { id:'testimony-t_sandal', text:'「11時ごろ参道を歩いていたら、石畳の端に破魔矢が一本、立てかけられていた。誰も傍にいなかった。奇妙に思ったが、儀式の一環かと思いそのままにしておいた——それが間違いだったようだ」', type:'testimony' },
+    { id:'testimony-t_yuel', text:'「バイシュラはんから"参道に置いといてな"って言われてん。ちゃんと立てかけてきたんやけど……12時半に確認しにいったら、なんで松飾りのとこに移動しとんの！？私はなんもしてへんで！？」', type:'testimony' },
+    { id:'testimony-t_lyria', text:'「ユエルさんが困ってたので一緒に探してたら、松飾りの根元にありました！バイシュラさんに確認したら"宝物庫の棚へ"とのことで、ユエルさんと二人でちゃんと収めましたよ！」', type:'testimony' },
+    { id:'testimony-t_vee', text:'（ダミー）「おいら、参道あたりで地面に刺さってる矢を見つけたんだ。倒れそうでかわいそうだったから、松飾りに立てかけ直してやったぜ！いいことしたと思ったんだけどな……まずかったか？」', type:'testimony' },
+    { id:'testimony-t_io', text:'（ダミー）「私は授与所の近くでずっと絵馬を書いてたよ。でも10時ごろ、誰かが矢を抱えて走ってったのは見た。……え、それ重要なの？もっとちゃんと見てればよかった」', type:'testimony' }
+];
+
+const evidences = [
+    { id:'evidence-e_hamaya',    text:'授与所の台帳（破魔矢の受取記録・バイシュラの署名）', type:'evidence' },
+    { id:'evidence-e_prayer',    text:'拝殿前の石段（駆け足の足跡と矢の木箱のかけら）', type:'evidence' },
+    { id:'evidence-e_alone',     text:'参道の石畳（誰もいない状態で立てかけられた矢の跡）', type:'evidence' },
+    { id:'evidence-e_pine',      text:'松飾りの根元（金色の羽根1本・矢が移動してきた痕跡）', type:'evidence' },
+    { id:'evidence-e_shelf',     text:'宝物庫の内棚（正式に納められた破魔矢）', type:'evidence' },
+    { id:'evidence-e_omamori',   text:'（ダミー）落ちていたお守りの袋（無関係の参拝客のもの）', type:'evidence' },
+    { id:'evidence-e_old_arrow', text:'（ダミー）古い破魔矢の残骸（昨年使用した別の矢）', type:'evidence' }
+];
+
+const locations = [
+    { id:'location-l_juyo',     text:'授与所の受付台', type:'location' },
+    { id:'location-l_haiden',   text:'拝殿前の石段', type:'location' },
+    { id:'location-l_sando',    text:'参道の石畳（中ほど）', type:'location' },
+    { id:'location-l_keidai',   text:'境内の松飾りの根元', type:'location' },
+    { id:'location-l_houmotsu', text:'宝物庫の内棚', type:'location' },
+    { id:'location-l_torii',    text:'（ダミー）参道の鳥居前', type:'location' },
+    { id:'location-l_ema',      text:'（ダミー）絵馬掛け所の前', type:'location' }
+];
+
+const correctLinkage = [
+    { order:1, time:'09:00', personId:'baishra',    testimonyId:'t_baishra', evidenceId:'e_hamaya', locationId:'l_juyo'     },
+    { order:2, time:'10:00', personId:'societte',   testimonyId:'t_societte',evidenceId:'e_prayer', locationId:'l_haiden'   },
+    { order:3, time:'11:00', personId:'sandalphon', testimonyId:'t_sandal',  evidenceId:'e_alone',  locationId:'l_sando'    },
+    { order:4, time:'12:30', personId:'yuel',       testimonyId:'t_yuel',    evidenceId:'e_pine',   locationId:'l_keidai'   },
+    { order:5, time:'14:00', personId:'lyria',      testimonyId:'t_lyria',   evidenceId:'e_shelf',  locationId:'l_houmotsu' }
+];
+
+// ===== ゲームロジック =====
+let selectedCard = null;
+let hintActive = false;
+
+function deselect() {
+    if (selectedCard) {
+        selectedCard.classList.remove('selected');
+        selectedCard = null;
+    }
+    document.querySelectorAll('.dropzone').forEach(z => z.classList.remove('highlight-target'));
+}
+
+function selectCard(card) {
+    deselect();
+    selectedCard = card;
+    card.classList.add('selected');
+    document.querySelectorAll('.dropzone').forEach(z => {
+        const zType = z.dataset.type;
+        if (zType === card.dataset.type) {
+            z.classList.add('highlight-target');
+        }
+    });
+}
+
+function createCard(text, id, className, parent, type) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.id = id;
+    div.className = `card ${className}`;
+    div.dataset.type = type;
+    div.dataset.entityId = id.replace(/^[^-]+-/, '');
+    div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        div === selectedCard ? deselect() : selectCard(div);
+    });
+    parent.appendChild(div);
+}
+
+function tryMoveCard(card, targetZone) {
+    if (targetZone.children.length > 0 && !targetZone.classList.contains('card-pool')) {
+        const existing = targetZone.children[0];
+        const poolId = `${existing.dataset.type}-unsorted-area`;
+        const pool = document.getElementById(poolId);
+        if (pool) pool.appendChild(existing);
+    }
+    targetZone.appendChild(card);
+    deselect();
+    if (hintActive) showHints();
+}
+
+function setupDropzoneClick(zone) {
+    if (zone.dataset.listenerAttached) return;
+    zone.dataset.listenerAttached = 'true';
+    zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedCard && selectedCard.dataset.type === zone.dataset.type) {
+            tryMoveCard(selectedCard, zone);
+        }
+    });
+}
+
+function setupSortable(sourceEl, targetSelector, groupName) {
+    if (typeof Sortable === 'undefined') return;
+    const options = {
+        group: groupName, animation: 150, ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag', delay: 100, delayOnTouchOnly: true,
+        forceFallback: true, fallbackOnBody: true,
+        onStart: () => deselect(),
+        onEnd: () => { if (hintActive) showHints(); }
+    };
+    new Sortable(sourceEl, options);
+    document.querySelectorAll(targetSelector).forEach(el => new Sortable(el, options));
+}
+
+function switchTab(evt, type) {
+    evt.stopPropagation();
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected','false');
+    });
+    document.querySelectorAll('.pool-section').forEach(s => s.classList.remove('active'));
+    evt.currentTarget.classList.add('active');
+    evt.currentTarget.setAttribute('aria-selected','true');
+    document.getElementById(`pool-${type}`).classList.add('active');
+    deselect();
+}
+
+function showHints() {
+    document.querySelectorAll('.timeline-slot').forEach((slot, idx) => {
+        const correct = correctLinkage[idx];
+        ['person','testimony','evidence','location'].forEach(type => {
+            const zone = slot.querySelector(`.${type}-dropzone`);
+            if (!zone) return;
+            zone.classList.remove('hint-correct','hint-incorrect','hint-empty');
+            if (zone.children.length === 0) {
+                zone.classList.add('hint-empty');
+            } else {
+                const card = zone.children[0];
+                const key = `${type}Id`;
+                zone.classList.add(card.dataset.entityId === correct[key] ? 'hint-correct' : 'hint-incorrect');
+            }
+        });
+    });
+}
+
+function clearHints() {
+    document.querySelectorAll('.dropzone').forEach(z => {
+        z.classList.remove('hint-correct','hint-incorrect','hint-empty');
+    });
+}
+
+function checkAnswer() {
+    let allCorrect = true;
+    let feedback = [];
+
+    document.querySelectorAll('.timeline-slot').forEach((slot, idx) => {
+        const correct = correctLinkage[idx];
+        const pZone = slot.querySelector('.person-dropzone');
+        const tZone = slot.querySelector('.testimony-dropzone');
+        const eZone = slot.querySelector('.evidence-dropzone');
+        const lZone = slot.querySelector('.location-dropzone');
+
+        const pOk = pZone.children.length > 0 && pZone.children[0].dataset.entityId === correct.personId;
+        const tOk = tZone.children.length > 0 && tZone.children[0].dataset.entityId === correct.testimonyId;
+        const eOk = eZone.children.length > 0 && eZone.children[0].dataset.entityId === correct.evidenceId;
+        const lOk = lZone.children.length > 0 && lZone.children[0].dataset.entityId === correct.locationId;
+
+        if (!pOk || !tOk || !eOk || !lOk) {
+            allCorrect = false;
+            feedback.push(`${correct.time}スロット：${!pOk?'人物 ':''}${!tOk?'証言 ':''}${!eOk?'証拠品 ':''}${!lOk?'場所 ':''}が違います`);
+        }
+    });
+
+    const resultArea = document.getElementById('result-area');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = '';
+
+    if (allCorrect) {
+        resultArea.className = 'correct';
+        const tmpl = document.getElementById('success-template');
+        resultArea.appendChild(tmpl.content.cloneNode(true));
+    } else {
+        resultArea.className = 'incorrect';
+        const msg = document.createElement('p');
+        msg.textContent = '推理が違います。もう一度考えてみてください。';
+        resultArea.appendChild(msg);
+        feedback.forEach(f => {
+            const p = document.createElement('p');
+            p.textContent = f;
+            resultArea.appendChild(p);
+        });
+    }
+    resultArea.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function init() {
+    // タイムラインスロット生成
+    const timelineArea = document.getElementById('timeline-area');
+    timeSlots.forEach((time, idx) => {
+        const slot = document.createElement('div');
+        slot.className = 'timeline-slot';
+        slot.dataset.slotIndex = idx;
+
+        const label = document.createElement('div');
+        label.className = 'time-label';
+        label.textContent = time;
+        slot.appendChild(label);
+
+        ['person','testimony','evidence','location'].forEach(type => {
+            const zone = document.createElement('div');
+            zone.className = `dropzone ${type}-dropzone`;
+            zone.dataset.type = type;
+            zone.setAttribute('aria-label', `${time} ${type}`);
+            setupDropzoneClick(zone);
+            slot.appendChild(zone);
+        });
+
+        timelineArea.appendChild(slot);
+    });
+
+    // カード生成
+    const personPool = document.getElementById('person-unsorted-area');
+    persons.forEach(p => createCard(p.text, p.id, 'person-card', personPool, 'person'));
+
+    const testimonyPool = document.getElementById('testimony-unsorted-area');
+    testimonies.forEach(t => createCard(t.text, t.id, 'testimony-card', testimonyPool, 'testimony'));
+
+    const evidencePool = document.getElementById('evidence-unsorted-area');
+    evidences.forEach(e => createCard(e.text, e.id, 'evidence-card', evidencePool, 'evidence'));
+
+    const locationPool = document.getElementById('location-unsorted-area');
+    locations.forEach(l => createCard(l.text, l.id, 'location-card', locationPool, 'location'));
+
+    // pool をクリックして選択解除
+    document.querySelectorAll('.card-pool').forEach(pool => {
+        pool.addEventListener('click', (e) => {
+            if (e.target === pool) deselect();
+        });
+    });
+
+    // pool → timeline Sortable
+    setupSortable(personPool,   '.person-dropzone',   'person');
+    setupSortable(testimonyPool,'.testimony-dropzone','testimony');
+    setupSortable(evidencePool, '.evidence-dropzone', 'evidence');
+    setupSortable(locationPool, '.location-dropzone', 'location');
+
+    // ヒントボタン
+    const hintBtn = document.getElementById('hint-btn');
+    hintBtn.addEventListener('click', () => {
+        hintActive = !hintActive;
+        hintBtn.classList.toggle('active', hintActive);
+        hintBtn.textContent = hintActive ? 'ヒントを隠す' : 'ヒントを見る';
+        hintActive ? showHints() : clearHints();
+    });
+
+    // 推理ボタン
+    document.getElementById('check-answer-btn').addEventListener('click', checkAnswer);
+
+    // 背景クリックで選択解除
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card') && !e.target.closest('.dropzone')) deselect();
+    });
+}
+
+init();
+</script>
+</body>
+</html>

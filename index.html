@@ -252,6 +252,58 @@
             background: #d81b60;
         }
 
+        /* お正月カード */
+        .game-card.january {
+            border-color: #c62828;
+            background: linear-gradient(135deg, #fff 0%, #fff8e1 100%);
+        }
+        .game-card.january .card-icon { color: #c62828; font-size: 3em; margin-bottom: 15px; }
+        .game-card.january .card-title { color: #c62828; }
+        .game-card.january .card-action { background: #c62828; }
+        .game-card.january:focus-visible { box-shadow: 0 0 0 3px rgba(198,40,40,0.25); }
+
+        /* ハロウィンカード */
+        .game-card.halloween {
+            border-color: #e65100;
+            background: linear-gradient(135deg, #1a0a2e 0%, #2d1040 100%);
+            color: #f3e5f5;
+        }
+        .game-card.halloween .card-icon { color: #ff8a65; font-size: 3em; margin-bottom: 15px; }
+        .game-card.halloween .card-title { color: #ff8a65; }
+        .game-card.halloween .card-subtitle { color: #e1bee7; }
+        .game-card.halloween .card-action { background: #e65100; }
+        .game-card.halloween:focus-visible { box-shadow: 0 0 0 3px rgba(230,81,0,0.4); }
+
+        /* 夏の海の家カード */
+        .game-card.summer {
+            border-color: #0277bd;
+            background: linear-gradient(135deg, #fff 0%, #e1f5fe 100%);
+        }
+        .game-card.summer .card-icon { color: #0277bd; font-size: 3em; margin-bottom: 15px; }
+        .game-card.summer .card-title { color: #0277bd; }
+        .game-card.summer .card-action { background: #0277bd; }
+        .game-card.summer:focus-visible { box-shadow: 0 0 0 3px rgba(2,119,189,0.25); }
+
+        /* クリスマスカード */
+        .game-card.christmas {
+            border-color: #1b5e20;
+            background: linear-gradient(135deg, #fff 0%, #e8f5e9 100%);
+        }
+        .game-card.christmas .card-icon { color: #1b5e20; font-size: 3em; margin-bottom: 15px; }
+        .game-card.christmas .card-title { color: #1b5e20; }
+        .game-card.christmas .card-action { background: #1b5e20; }
+        .game-card.christmas:focus-visible { box-shadow: 0 0 0 3px rgba(27,94,32,0.25); }
+
+        /* ジューンブライドカード */
+        .game-card.june {
+            border-color: #6a1b9a;
+            background: linear-gradient(135deg, #fff 0%, #f3e5f5 100%);
+        }
+        .game-card.june .card-icon { color: #6a1b9a; font-size: 3em; margin-bottom: 15px; }
+        .game-card.june .card-title { color: #6a1b9a; }
+        .game-card.june .card-action { background: #6a1b9a; }
+        .game-card.june:focus-visible { box-shadow: 0 0 0 3px rgba(106,27,154,0.25); }
+
         .card-header {
             display: flex;
             align-items: center;
@@ -373,6 +425,66 @@
                 <div class="card-subtitle">交錯するハートチョコ</div>
                 <span class="card-action" aria-hidden="true">開始する</span>
             </button>
+
+            <!-- お正月 -->
+            <button class="game-card january" aria-label="お正月 — 消えた破魔矢 — ゲームを開始する">
+                <div class="card-header">
+                    <div class="card-icon" role="img" aria-hidden="true">⛩️</div>
+                    <div>
+                        <div class="card-title">お正月</div>
+                    </div>
+                </div>
+                <div class="card-subtitle">消えた破魔矢</div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
+
+            <!-- ハロウィン -->
+            <button class="game-card halloween" aria-label="ハロウィン — 仮面の宴、逆さまの証言 — ゲームを開始する">
+                <div class="card-header">
+                    <div class="card-icon" role="img" aria-hidden="true">🎃</div>
+                    <div>
+                        <div class="card-title">ハロウィン</div>
+                    </div>
+                </div>
+                <div class="card-subtitle">仮面の宴、逆さまの証言</div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
+
+            <!-- 夏の海の家 -->
+            <button class="game-card summer" aria-label="夏の海の家 — 碧玉の浜の三つの証言 — ゲームを開始する">
+                <div class="card-header">
+                    <div class="card-icon" role="img" aria-hidden="true">🌊</div>
+                    <div>
+                        <div class="card-title">夏の海の家</div>
+                    </div>
+                </div>
+                <div class="card-subtitle">碧玉の浜の三つの証言</div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
+
+            <!-- クリスマス -->
+            <button class="game-card christmas" aria-label="クリスマス — 消えた銀の星 — ゲームを開始する">
+                <div class="card-header">
+                    <div class="card-icon" role="img" aria-hidden="true">🎄</div>
+                    <div>
+                        <div class="card-title">クリスマス</div>
+                    </div>
+                </div>
+                <div class="card-subtitle">消えた銀の星</div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
+
+            <!-- ジューンブライド -->
+            <button class="game-card june" aria-label="ジューンブライド — 二つの誓い — ゲームを開始する">
+                <div class="card-header">
+                    <div class="card-icon" role="img" aria-hidden="true">💐</div>
+                    <div>
+                        <div class="card-title">ジューンブライド</div>
+                    </div>
+                </div>
+                <div class="card-subtitle">二つの誓い</div>
+                <span class="card-action" aria-hidden="true">開始する</span>
+            </button>
         </div>
 
         <div class="footer">
@@ -386,6 +498,21 @@
         });
         document.querySelector('.game-card.valentine').addEventListener('click', () => {
             location.href = 'valentine.html';
+        });
+        document.querySelector('.game-card.january').addEventListener('click', () => {
+            location.href = 'january.html';
+        });
+        document.querySelector('.game-card.halloween').addEventListener('click', () => {
+            location.href = 'halloween.html';
+        });
+        document.querySelector('.game-card.summer').addEventListener('click', () => {
+            location.href = 'summer.html';
+        });
+        document.querySelector('.game-card.christmas').addEventListener('click', () => {
+            location.href = 'christmas.html';
+        });
+        document.querySelector('.game-card.june').addEventListener('click', () => {
+            location.href = 'june.html';
         });
     </script>
 </body>

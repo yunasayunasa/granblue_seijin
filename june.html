@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイムラインミステリ：二つの誓い</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
+        integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb"
+        crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdf6ff;
+            --container-bg: #fef9ff;
+            --main-purple: #6a1b9a;
+            --accent-gold: #c5a059;
+            --sub-purple: #e1bee7;
+            --accent-light: #ab47bc;
+            --text-color: #3e1a4e;
+            --border-radius: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Shippori Mincho','Hiragino Mincho ProN',serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(rgba(106,27,154,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            padding: 10px;
+            overscroll-behavior: none;
+        }
+        .game-container {
+            width: 100%; max-width: 1300px; margin: 0 auto;
+            background-color: var(--container-bg);
+            border: 2px solid var(--accent-gold);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(106,27,154,0.15);
+            padding: 15px; position: relative;
+        }
+        .game-container::before {
+            content:""; position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+            border:1px solid var(--sub-purple); border-radius:8px; pointer-events:none;
+        }
+        .back-button {
+            position:absolute; top:15px; left:15px;
+            padding:8px 16px; background:var(--main-purple); color:#fff;
+            border:none; border-radius:20px; cursor:pointer;
+            font-family:inherit; font-size:0.9em; transition:all 0.3s;
+        }
+        .back-button:hover { background:#7b1fa2; transform:translateY(-2px); }
+        h1 {
+            color: var(--main-purple); text-align:center;
+            border-bottom: 3px double var(--accent-gold);
+            padding-bottom:10px; font-size:1.8em;
+            letter-spacing:0.1em; margin:10px 0 20px;
+        }
+        .story-text {
+            line-height:1.6; margin-bottom:20px;
+            text-align:center; font-size:0.95em;
+        }
+        .pair-notice {
+            text-align:center; font-size:0.9em;
+            background:rgba(106,27,154,0.06); border:1px solid var(--main-purple);
+            border-radius:6px; padding:8px 16px; margin-bottom:16px;
+            color:var(--main-purple);
+        }
+        .area-title {
+            font-weight:bold; font-size:1.2em;
+            margin:20px 0 15px; padding-left:15px;
+            border-left:6px solid var(--accent-gold);
+            color:var(--main-purple);
+            background:linear-gradient(90deg,rgba(197,160,89,0.1) 0%,rgba(255,255,255,0) 100%);
+        }
+        .instruction-text {
+            font-size:0.85em; color:#6a4e7e;
+            margin-bottom:10px; text-align:center;
+            background:rgba(255,255,255,0.7); padding:5px; border-radius:4px;
+        }
+
+        /* --- タブ --- */
+        .tab-container {
+            display:flex; gap:5px; margin-bottom:0;
+            border-bottom:2px solid var(--accent-gold); padding-left:10px;
+        }
+        .tab-btn {
+            padding:12px 20px; background-color:rgba(255,255,255,0.4);
+            border:1px solid var(--sub-purple); border-bottom:none;
+            cursor:pointer; font-family:inherit; color:var(--text-color);
+            border-radius:8px 8px 0 0; transition:all 0.2s; font-weight:bold;
+        }
+        .tab-btn.active {
+            background-color:var(--container-bg); border-color:var(--accent-gold);
+            border-bottom:2px solid var(--container-bg); color:var(--main-purple);
+            transform:translateY(2px);
+        }
+        .card-pool-container {
+            background-color:rgba(255,255,255,0.6);
+            border:1px solid var(--sub-purple); border-top:none;
+            border-radius:0 0 8px 8px; min-height:100px; margin-bottom:20px;
+        }
+        .pool-section { display:none; padding:15px; animation:fadeIn 0.3s ease; }
+        .pool-section.active { display:block; }
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(-5px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .card-pool { min-height:80px; display:flex; flex-wrap:wrap; gap:10px; }
+
+        /* --- カード共通 --- */
+        .card {
+            background-color:#fff; border:1px solid #d7b8e8; border-radius:6px;
+            padding:12px; cursor:grab; box-shadow:0 2px 4px rgba(0,0,0,0.05);
+            font-size:0.95em; position:relative; touch-action:none;
+            user-select:none; transition:background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .card.selected {
+            background-color:#f3e5f5; border:2px solid var(--accent-gold);
+            transform:scale(1.05); box-shadow:0 5px 15px rgba(197,160,89,0.3); z-index:10;
+        }
+        .sortable-ghost { opacity:0.4; background-color:#e1bee7; border:2px dashed var(--main-purple); }
+        .sortable-drag {
+            cursor:grabbing; opacity:1; background-color:#fff;
+            box-shadow:0 10px 20px rgba(0,0,0,0.2);
+            transform:scale(1.05) rotate(2deg); border:2px solid var(--accent-gold);
+        }
+        /* タイムラインAカード（式場）: 紫系 */
+        .person-card-a {
+            border-left:5px solid var(--main-purple);
+            min-width:120px; text-align:center; font-weight:bold;
+            background-color:#f9f0ff;
+        }
+        /* タイムラインBカード（礼拝堂）: 金系 */
+        .person-card-b {
+            border-left:5px solid var(--accent-gold);
+            min-width:120px; text-align:center; font-weight:bold;
+            background-color:#fdf8ec;
+        }
+        .testimony-card-a { border-left:5px solid var(--main-purple); width:100%; max-width:400px; background-color:#f9f0ff; }
+        .testimony-card-b { border-left:5px solid var(--accent-gold);  width:100%; max-width:400px; background-color:#fdf8ec; }
+        .evidence-card-a {
+            border-left:5px solid var(--accent-light);
+            min-width:120px; text-align:center; font-weight:bold; background-color:#f3e5f5;
+        }
+        .evidence-card-b {
+            border-left:5px solid #a0800d;
+            min-width:120px; text-align:center; font-weight:bold; background-color:#fdf3d8;
+        }
+
+        /* --- デュアルタイムライン --- */
+        .dual-timeline {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .timeline-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .timeline-column-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 10px;
+            border-radius: 6px;
+            color: #fff;
+        }
+        .timeline-column-header.venue  { background-color: var(--main-purple); }
+        .timeline-column-header.chapel { background-color: #8d6e18; }
+        .timeline-slot {
+            background-color:#fff; border:1px solid var(--sub-purple);
+            border-radius:var(--border-radius); padding:12px;
+            display:flex; flex-direction:column;
+            gap:8px;
+            box-shadow:0 2px 5px rgba(0,0,0,0.04); position:relative;
+        }
+        .time-label {
+            font-weight:bold; color:var(--main-purple); text-align:center;
+            font-size:1.0em; background:#fdf9ff; padding:4px;
+            border:1px solid var(--sub-purple); border-radius:4px;
+        }
+        .dropzone {
+            min-height:65px; background-color:#fcf8ff;
+            border:2px dashed #d7b8e8; border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.2s; z-index:1;
+        }
+        .dropzone.highlight-target {
+            background-color:#f3e5f5; border-color:var(--accent-gold); cursor:pointer;
+        }
+        .testimony-dropzone { padding:5px; }
+
+        /* ヒント */
+        .dropzone.hint-correct {
+            border:3px solid #2196f3; background-color:rgba(33,150,243,0.1);
+            box-shadow:0 0 15px rgba(33,150,243,0.5); animation:pulse-blue 1.5s infinite;
+        }
+        .dropzone.hint-incorrect {
+            border:3px solid #f44336; background-color:rgba(244,67,54,0.1);
+            box-shadow:0 0 15px rgba(244,67,54,0.5); animation:pulse-red 1.5s infinite;
+        }
+        .dropzone.hint-empty {
+            border:3px solid #ffc107; background-color:rgba(255,193,7,0.1);
+            box-shadow:0 0 15px rgba(255,193,7,0.5); animation:pulse-yellow 1.5s infinite;
+        }
+        @keyframes pulse-blue {
+            0%,100%{box-shadow:0 0 15px rgba(33,150,243,0.5);}
+            50%{box-shadow:0 0 25px rgba(33,150,243,0.8);}
+        }
+        @keyframes pulse-red {
+            0%,100%{box-shadow:0 0 15px rgba(244,67,54,0.5);}
+            50%{box-shadow:0 0 25px rgba(244,67,54,0.8);}
+        }
+        @keyframes pulse-yellow {
+            0%,100%{box-shadow:0 0 15px rgba(255,193,7,0.5);}
+            50%{box-shadow:0 0 25px rgba(255,193,7,0.8);}
+        }
+
+        /* --- ボタン --- */
+        .button-container {
+            text-align:center; margin-top:40px;
+            display:flex; justify-content:center; gap:15px; flex-wrap:wrap;
+        }
+        .hint-btn {
+            background-color:#ffc107; color:#333; border:none;
+            padding:12px 30px; font-size:1.1em; border-radius:25px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 8px rgba(255,193,7,0.4); transition:all 0.3s;
+        }
+        .hint-btn:hover { background-color:#ffb300; transform:translateY(-2px); }
+        .hint-btn.active { background-color:#ff9800; }
+        #check-answer-btn {
+            background-color:var(--main-purple); color:#fff; border:none;
+            padding:15px 40px; font-size:1.2em; border-radius:30px;
+            cursor:pointer; font-family:inherit;
+            box-shadow:0 4px 10px rgba(106,27,154,0.4); transition:all 0.3s;
+        }
+        #check-answer-btn:hover { background-color:#7b1fa2; transform:translateY(-2px); }
+
+        /* --- 結果 --- */
+        #result-area {
+            margin-top:30px; padding:20px; border-radius:8px;
+            line-height:1.8; white-space:pre-wrap; display:none;
+        }
+        .correct  { background-color:#f1f8e9; border:1px solid #8bc34a; color:#2e7d32; }
+        .incorrect{ background-color:#ffebee; border:1px solid #ef9a9a; color:#c62828; }
+
+        /* --- モバイル --- */
+        @media (max-width: 900px) {
+            body { padding:5px; }
+            .game-container { padding:10px; }
+            h1 { font-size:1.5em; }
+            .dual-timeline { grid-template-columns: 1fr; }
+            .dropzone { min-height:55px; }
+            .testimony-card-a, .testimony-card-b { font-size:0.9em; }
+        }
+
+        .tab-btn:focus-visible, .hint-btn:focus-visible,
+        #check-answer-btn:focus-visible, .back-button:focus-visible {
+            outline:none; box-shadow:0 0 0 3px rgba(106,27,154,0.4);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *,*::before,*::after {
+                animation-duration:0.01ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <button class="back-button" onclick="location.href='index.html'">← 戻る</button>
+    <h1>二つの誓い</h1>
+    <div class="story-text">
+        <p>六月の結婚式当日、グランサイファー甲板の「式場」と近くの「礼拝堂」で<br>
+        同時に準備が進んでいた。式直前、誓いの指輪が2つとも消えた。<br>
+        同じ5人が<b>式場と礼拝堂の両方</b>に姿を現している。<br>
+        それぞれの場所での行動を正確に整理すれば、指輪の行方が明らかになる。</p>
+    </div>
+    <div class="pair-notice">※ 「（式場）」カードは式場タイムラインへ、「（礼拝堂）」カードは礼拝堂タイムラインへのみ配置できます。</div>
+
+    <!-- タブ -->
+    <div class="tab-container" role="tablist" aria-label="カード種別">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="pool-person"    onclick="switchTab(event,'person')">人物</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-testimony" onclick="switchTab(event,'testimony')">証言</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="pool-evidence"  onclick="switchTab(event,'evidence')">証拠品</button>
+    </div>
+
+    <div class="card-pool-container">
+        <div id="pool-person"    class="pool-section active" role="tabpanel" aria-label="人物カード">
+            <p class="instruction-text">（式場）カードは紫枠の式場タイムラインへ、（礼拝堂）カードは金枠の礼拝堂タイムラインへ配置してください。</p>
+            <div id="person-unsorted-area"    class="card-pool" data-type="person"></div>
+        </div>
+        <div id="pool-testimony" class="pool-section" role="tabpanel" aria-label="証言カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="testimony-unsorted-area" class="card-pool" data-type="testimony"></div>
+        </div>
+        <div id="pool-evidence"  class="pool-section" role="tabpanel" aria-label="証拠品カード">
+            <p class="instruction-text">タップで選択、枠をタップで配置（ドラッグも可）</p>
+            <div id="evidence-unsorted-area"  class="card-pool" data-type="evidence"></div>
+        </div>
+    </div>
+
+    <div class="area-title">タイムライン</div>
+    <div id="dual-timeline-area" class="dual-timeline"></div>
+
+    <div class="button-container">
+        <button id="hint-btn" class="hint-btn">ヒントを見る</button>
+        <button id="check-answer-btn">推理する</button>
+    </div>
+    <div id="result-area"></div>
+
+    <template id="success-template">
+        <h3>【見事な推理です！】</h3>
+        <p>真相はこうでした。</p>
+        <p>
+            カリオストロは式場の装飾作業中、「邪魔になるから一時的に」と<br>
+            誓いの指輪入りの箱を礼拝堂へ持ち込んだ。中身を確認していなかった。<br>
+            礼拝堂でスーテラが発見したが触れず、シャルロッテも気に留めなかった。<br>
+            カリオストロが13時に自ら箱を開けて初めて指輪と気づき、<br>
+            ヴィーラが取り戻したが式場はすでに大混乱。
+        </p>
+        <p><b>推理の鍵（クロスタイムライン）：</b><br>
+            ①式場11:00 カリオストロ「礼拝堂の台に置いてきた」<br>
+            ②礼拝堂11:00 スーテラ「突然謎の箱が出現した」<br>
+            → 同じ11:00に両方で起きた出来事 = カリオストロが持ち込んだ<br>
+            ③礼拝堂13:00 カリオストロが開封→指輪を発見<br>
+            → 自分が原因と判明
+        </p>
+    </template>
+</div>
+<script>
+// ===== データ定義 =====
+// System E: デュアルタイムライン、-aカードはA(式場)のみ、-bカードはB(礼拝堂)のみ
+const timelineConfig = [
+    { key:'A', label:'式場',   times:['10:00','11:00','12:00','13:00','14:00'], headerClass:'venue'  },
+    { key:'B', label:'礼拝堂', times:['10:00','11:00','12:00','13:00','14:00'], headerClass:'chapel' }
+];
+
+const persons = [
+    { id:'person-charlotta-a',  text:'シャルロッテ（式場）',   type:'person', timeline:'A' },
+    { id:'person-cagliostro-a', text:'カリオストロ（式場）',   type:'person', timeline:'A' },
+    { id:'person-vira-a',       text:'ヴィーラ（式場）',       type:'person', timeline:'A' },
+    { id:'person-metera-a',     text:'メーテラ（式場）',       type:'person', timeline:'A' },
+    { id:'person-sutera-a',     text:'スーテラ（式場）',       type:'person', timeline:'A' },
+    { id:'person-charlotta-b',  text:'シャルロッテ（礼拝堂）', type:'person', timeline:'B' },
+    { id:'person-cagliostro-b', text:'カリオストロ（礼拝堂）', type:'person', timeline:'B' },
+    { id:'person-vira-b',       text:'ヴィーラ（礼拝堂）',     type:'person', timeline:'B' },
+    { id:'person-metera-b',     text:'メーテラ（礼拝堂）',     type:'person', timeline:'B' },
+    { id:'person-sutera-b',     text:'スーテラ（礼拝堂）',     type:'person', timeline:'B' }
+];
+
+const testimonies = [
+    // 式場A
+    { id:'testimony-ta1', text:'（式場10:00）シャルロッテ「式場の最終確認を行いました！祭壇の上に誓いの指輪の箱があることをしっかりと確認してあります！白いサテンのリボンが巻かれた立派な箱でありました！この時点では完璧であります！！」', type:'testimony', timeline:'A' },
+    { id:'testimony-ta2', text:'（式場11:00）カリオストロ「式場の装飾が邪魔で作業しにくかったんで、祭壇の箱を一時的に脇へどかしたんだぜ。そのままにするのも悪いから礼拝堂の台に置いてきたんだが——まさか中に指輪が入ってたとは思わなかったな」', type:'testimony', timeline:'A' },
+    { id:'testimony-ta3', text:'（式場12:00）ヴィーラ「12時に式場へ参りましたら、祭壇の箱がなくなっておりました。先ほどまで確かにあったはずでしたので、大変驚きました。急いで周囲を確認しましたが見当たらず、誰かに尋ねようと思いました」', type:'testimony', timeline:'A' },
+    { id:'testimony-ta4', text:'（式場13:00）メーテラ「13時ごろ、花嫁の入場リハーサルを式場で見ていたわ。正直なところ、その時は祭壇の箱まで確認していなかったのよね。リハーサルがきれいで、つい見惚れてしまったの」', type:'testimony', timeline:'A' },
+    { id:'testimony-ta5', text:'（式場14:00）スーテラ「式の直前に式場を確認しましたが、祭壇に指輪の箱がありませんでした。急いで皆さんに声をかけましたが誰も知らないとのことで、大変なことになってしまいました。申し訳ありません……」', type:'testimony', timeline:'A' },
+    // 礼拝堂B
+    { id:'testimony-tb1', text:'（礼拝堂10:00）メーテラ「礼拝堂の鍵は私が預かっていたから、朝一番に開けて確認したわ。その時点では祭壇に何も置かれていなかったわよ。いつも通りの、静かな礼拝堂だったわね」', type:'testimony', timeline:'B' },
+    { id:'testimony-tb2', text:'（礼拝堂11:00）スーテラ「礼拝堂で花飾りを準備していましたら、祭壇の上に見慣れない白い箱が置かれていました。さっきまではなかったはずで……誰かが持ち込んだのかと思いましたが、大切なものかもしれないので触れずにおきました」', type:'testimony', timeline:'B' },
+    { id:'testimony-tb3', text:'（礼拝堂12:00）シャルロッテ「12時に礼拝堂へ祈りを捧げに参りました！祭壇に白いリボンの箱がありましたが、礼拝堂の備品であると判断してしまいました！今思えば確認すべきでありました！不覚の極みであります！！次からは必ず確認いたします！！」', type:'testimony', timeline:'B' },
+    { id:'testimony-tb4', text:'（礼拝堂13:00）カリオストロ「礼拝堂の台に置いてた箱が気になって開けてみたら……指輪が入ってたんだぜ！俺様が式場から持ってきた箱に指輪が入ってたとは思わなかったな。これはまずいと思って大急ぎで式場へ知らせに行ったんだぜ」', type:'testimony', timeline:'B' },
+    { id:'testimony-tb5', text:'（礼拝堂14:00）ヴィーラ「カリオストロさんから"礼拝堂に指輪がある"と聞いて急いで参りました。指輪の箱は無事でございました。しかし式場へ届けようと駆けつけた時にはすでに大騒ぎになっておりました。間に合わず、申し訳ありません」', type:'testimony', timeline:'B' }
+];
+
+const evidences = [
+    // 式場A
+    { id:'evidence-ea1', text:'（式場）祭壇上の指輪箱（10:00確認・サテンリボン付き）', type:'evidence', timeline:'A' },
+    { id:'evidence-ea2', text:'（式場）式場の装飾台（箱が一時置かれた跡・カリオストロの作業痕）', type:'evidence', timeline:'A' },
+    { id:'evidence-ea3', text:'（式場）空になった式場祭壇（12:00・箱がなくなった後）', type:'evidence', timeline:'A' },
+    { id:'evidence-ea4', text:'（式場）花嫁入場リハーサルの記録（13:00・祭壇未確認）', type:'evidence', timeline:'A' },
+    { id:'evidence-ea5', text:'（式場）式直前の空の祭壇（14:00・スーテラ発見時）', type:'evidence', timeline:'A' },
+    // 礼拝堂B
+    { id:'evidence-eb1', text:'（礼拝堂）礼拝堂の開錠記録（10:00・メーテラが開けた・祭壇は空）', type:'evidence', timeline:'B' },
+    { id:'evidence-eb2', text:'（礼拝堂）礼拝堂祭壇に突然現れた白い箱（11:00）', type:'evidence', timeline:'B' },
+    { id:'evidence-eb3', text:'（礼拝堂）礼拝堂の参拝記録（12:00・シャルロッテが気づかなかった）', type:'evidence', timeline:'B' },
+    { id:'evidence-eb4', text:'（礼拝堂）開かれた箱と2つの指輪（13:00・カリオストロが発見）', type:'evidence', timeline:'B' },
+    { id:'evidence-eb5', text:'（礼拝堂）礼拝堂から式場への足跡（14:00・ヴィーラが急いだ跡）', type:'evidence', timeline:'B' }
+];
+
+const correctAnswers = {
+    A: [
+        { time:'10:00', personId:'charlotta-a',  testimonyId:'ta1', evidenceId:'ea1' },
+        { time:'11:00', personId:'cagliostro-a', testimonyId:'ta2', evidenceId:'ea2' },
+        { time:'12:00', personId:'vira-a',        testimonyId:'ta3', evidenceId:'ea3' },
+        { time:'13:00', personId:'metera-a',      testimonyId:'ta4', evidenceId:'ea4' },
+        { time:'14:00', personId:'sutera-a',      testimonyId:'ta5', evidenceId:'ea5' }
+    ],
+    B: [
+        { time:'10:00', personId:'metera-b',      testimonyId:'tb1', evidenceId:'eb1' },
+        { time:'11:00', personId:'sutera-b',      testimonyId:'tb2', evidenceId:'eb2' },
+        { time:'12:00', personId:'charlotta-b',   testimonyId:'tb3', evidenceId:'eb3' },
+        { time:'13:00', personId:'cagliostro-b',  testimonyId:'tb4', evidenceId:'eb4' },
+        { time:'14:00', personId:'vira-b',         testimonyId:'tb5', evidenceId:'eb5' }
+    ]
+};
+
+// ===== ゲームロジック =====
+let selectedCard = null;
+let hintActive = false;
+
+function deselect() {
+    if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+    document.querySelectorAll('.dropzone').forEach(z => z.classList.remove('highlight-target'));
+}
+
+function selectCard(card) {
+    deselect();
+    selectedCard = card;
+    card.classList.add('selected');
+    // タイムライン制限: -aカードはAのみ、-bカードはBのみハイライト
+    const cardTimeline = card.dataset.timeline;
+    document.querySelectorAll('.dropzone').forEach(z => {
+        if (z.dataset.type === card.dataset.type) {
+            const zTimeline = z.closest('.timeline-slot') ? z.closest('.timeline-slot').dataset.timeline : null;
+            if (!cardTimeline || !zTimeline || cardTimeline === zTimeline) {
+                z.classList.add('highlight-target');
+            }
+        }
+    });
+}
+
+function createCard(text, id, className, parent, type, timeline) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.id = id;
+    div.className = `card ${className}`;
+    div.dataset.type = type;
+    div.dataset.entityId = id.replace(/^[^-]+-/, '');
+    if (timeline) div.dataset.timeline = timeline;
+    div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        div === selectedCard ? deselect() : selectCard(div);
+    });
+    parent.appendChild(div);
+}
+
+function tryMoveCard(card, targetZone) {
+    // タイムライン制限チェック
+    const cardTimeline = card.dataset.timeline;
+    const slotTimeline = targetZone.closest('.timeline-slot') ? targetZone.closest('.timeline-slot').dataset.timeline : null;
+    if (cardTimeline && slotTimeline && cardTimeline !== slotTimeline) {
+        const resultArea = document.getElementById('result-area');
+        resultArea.style.display = 'block';
+        resultArea.className = 'incorrect';
+        resultArea.innerHTML = '';
+        const p = document.createElement('p');
+        const tlLabel = cardTimeline === 'A' ? '式場' : '礼拝堂';
+        p.textContent = `「${card.textContent}」は${tlLabel}タイムラインにのみ配置できます。`;
+        resultArea.appendChild(p);
+        deselect();
+        return;
+    }
+
+    if (targetZone.children.length > 0 && !targetZone.classList.contains('card-pool')) {
+        const existing = targetZone.children[0];
+        const poolId = `${existing.dataset.type}-unsorted-area`;
+        const pool = document.getElementById(poolId);
+        if (pool) pool.appendChild(existing);
+    }
+    targetZone.appendChild(card);
+    deselect();
+    if (hintActive) showHints();
+}
+
+function setupDropzoneClick(zone) {
+    if (zone.dataset.listenerAttached) return;
+    zone.dataset.listenerAttached = 'true';
+    zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedCard && selectedCard.dataset.type === zone.dataset.type) {
+            tryMoveCard(selectedCard, zone);
+        }
+    });
+}
+
+function setupSortable(sourceEl, targetSelector, groupName) {
+    if (typeof Sortable === 'undefined') return;
+    const options = {
+        group: groupName, animation: 150, ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag', delay: 100, delayOnTouchOnly: true,
+        forceFallback: true, fallbackOnBody: true,
+        onStart: () => deselect(),
+        onEnd: (evt) => {
+            // タイムライン制限: ドラッグ後に違うタイムラインへ入ったカードをプールへ戻す
+            const card = evt.item;
+            const toEl = evt.to;
+            if (!toEl.classList.contains('card-pool')) {
+                const cardTimeline = card.dataset.timeline;
+                const slotTimeline = toEl.closest('.timeline-slot') ? toEl.closest('.timeline-slot').dataset.timeline : null;
+                if (cardTimeline && slotTimeline && cardTimeline !== slotTimeline) {
+                    const pool = document.getElementById(`${card.dataset.type}-unsorted-area`);
+                    if (pool) pool.appendChild(card);
+                }
+            }
+            if (hintActive) showHints();
+        }
+    };
+    new Sortable(sourceEl, options);
+    document.querySelectorAll(targetSelector).forEach(el => new Sortable(el, options));
+}
+
+function switchTab(evt, type) {
+    evt.stopPropagation();
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active'); b.setAttribute('aria-selected','false');
+    });
+    document.querySelectorAll('.pool-section').forEach(s => s.classList.remove('active'));
+    evt.currentTarget.classList.add('active');
+    evt.currentTarget.setAttribute('aria-selected','true');
+    document.getElementById(`pool-${type}`).classList.add('active');
+    deselect();
+}
+
+function showHints() {
+    document.querySelectorAll('.timeline-slot').forEach(slot => {
+        const tlKey   = slot.dataset.timeline;
+        const slotIdx = parseInt(slot.dataset.slotIndex, 10);
+        const correct = correctAnswers[tlKey][slotIdx];
+        ['person','testimony','evidence'].forEach(type => {
+            const zone = slot.querySelector(`.${type}-dropzone`);
+            if (!zone) return;
+            zone.classList.remove('hint-correct','hint-incorrect','hint-empty');
+            if (zone.children.length === 0) {
+                zone.classList.add('hint-empty');
+            } else {
+                const key = `${type}Id`;
+                zone.classList.add(zone.children[0].dataset.entityId === correct[key] ? 'hint-correct' : 'hint-incorrect');
+            }
+        });
+    });
+}
+
+function clearHints() {
+    document.querySelectorAll('.dropzone').forEach(z => {
+        z.classList.remove('hint-correct','hint-incorrect','hint-empty');
+    });
+}
+
+function checkAnswer() {
+    let allCorrect = true;
+    const feedback = [];
+
+    document.querySelectorAll('.timeline-slot').forEach(slot => {
+        const tlKey   = slot.dataset.timeline;
+        const slotIdx = parseInt(slot.dataset.slotIndex, 10);
+        const correct = correctAnswers[tlKey][slotIdx];
+        const pZone = slot.querySelector('.person-dropzone');
+        const tZone = slot.querySelector('.testimony-dropzone');
+        const eZone = slot.querySelector('.evidence-dropzone');
+        const pOk = pZone.children.length > 0 && pZone.children[0].dataset.entityId === correct.personId;
+        const tOk = tZone.children.length > 0 && tZone.children[0].dataset.entityId === correct.testimonyId;
+        const eOk = eZone.children.length > 0 && eZone.children[0].dataset.entityId === correct.evidenceId;
+        if (!pOk || !tOk || !eOk) {
+            allCorrect = false;
+            const tlLabel = timelineConfig.find(c => c.key === tlKey)?.label || tlKey;
+            feedback.push(`${tlLabel} ${correct.time}スロット：${!pOk?'人物 ':''}${!tOk?'証言 ':''}${!eOk?'証拠品 ':''}が違います`);
+        }
+    });
+
+    const resultArea = document.getElementById('result-area');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = '';
+
+    if (allCorrect) {
+        resultArea.className = 'correct';
+        resultArea.appendChild(document.getElementById('success-template').content.cloneNode(true));
+    } else {
+        resultArea.className = 'incorrect';
+        const msg = document.createElement('p');
+        msg.textContent = '推理が違います。もう一度考えてみてください。';
+        resultArea.appendChild(msg);
+        feedback.forEach(f => {
+            const p = document.createElement('p');
+            p.textContent = f;
+            resultArea.appendChild(p);
+        });
+    }
+    resultArea.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function init() {
+    const dualArea = document.getElementById('dual-timeline-area');
+
+    timelineConfig.forEach(tlConfig => {
+        const col = document.createElement('div');
+        col.className = 'timeline-column';
+
+        const header = document.createElement('div');
+        header.className = `timeline-column-header ${tlConfig.headerClass}`;
+        header.textContent = `${tlConfig.label}タイムライン`;
+        col.appendChild(header);
+
+        tlConfig.times.forEach((time, slotIdx) => {
+            const slot = document.createElement('div');
+            slot.className = 'timeline-slot';
+            slot.dataset.timeline = tlConfig.key;
+            slot.dataset.slotIndex = slotIdx;
+
+            const label = document.createElement('div');
+            label.className = 'time-label';
+            label.textContent = time;
+            slot.appendChild(label);
+
+            ['person','testimony','evidence'].forEach(type => {
+                const zone = document.createElement('div');
+                zone.className = `dropzone ${type}-dropzone`;
+                zone.dataset.type = type;
+                zone.setAttribute('aria-label', `${tlConfig.label} ${time} ${type}`);
+                setupDropzoneClick(zone);
+                slot.appendChild(zone);
+            });
+
+            col.appendChild(slot);
+        });
+
+        dualArea.appendChild(col);
+    });
+
+    const personPool    = document.getElementById('person-unsorted-area');
+    const testimonyPool = document.getElementById('testimony-unsorted-area');
+    const evidencePool  = document.getElementById('evidence-unsorted-area');
+
+    persons.forEach(p    => createCard(p.text, p.id, p.timeline === 'A' ? 'person-card-a' : 'person-card-b',         personPool,    'person',    p.timeline));
+    testimonies.forEach(t => createCard(t.text, t.id, t.timeline === 'A' ? 'testimony-card-a' : 'testimony-card-b', testimonyPool, 'testimony', t.timeline));
+    evidences.forEach(e   => createCard(e.text, e.id, e.timeline === 'A' ? 'evidence-card-a' : 'evidence-card-b',   evidencePool,  'evidence',  e.timeline));
+
+    document.querySelectorAll('.card-pool').forEach(pool => {
+        pool.addEventListener('click', (e) => { if (e.target === pool) deselect(); });
+    });
+
+    setupSortable(personPool,    '.person-dropzone',   'person');
+    setupSortable(testimonyPool, '.testimony-dropzone','testimony');
+    setupSortable(evidencePool,  '.evidence-dropzone', 'evidence');
+
+    const hintBtn = document.getElementById('hint-btn');
+    hintBtn.addEventListener('click', () => {
+        hintActive = !hintActive;
+        hintBtn.classList.toggle('active', hintActive);
+        hintBtn.textContent = hintActive ? 'ヒントを隠す' : 'ヒントを見る';
+        hintActive ? showHints() : clearHints();
+    });
+
+    document.getElementById('check-answer-btn').addEventListener('click', checkAnswer);
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card') && !e.target.closest('.dropzone')) deselect();
+    });
+}
+
+init();
+</script>
+</body>
+</html>
