@@ -416,6 +416,14 @@ function selectCard(card) {
     });
 }
 
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 function swapCards(cardA, cardB) {
     if (cardA.dataset.type !== cardB.dataset.type) { selectCard(cardB); return; }
     const parentA = cardA.parentElement;
@@ -610,16 +618,16 @@ function init() {
 
     // カード生成
     const personPool = document.getElementById('person-unsorted-area');
-    persons.forEach(p => createCard(p.text, p.id, 'person-card', personPool, 'person'));
+    shuffle([...persons]).forEach(p => createCard(p.text, p.id, 'person-card', personPool, 'person'));
 
     const testimonyPool = document.getElementById('testimony-unsorted-area');
-    testimonies.forEach(t => createCard(t.text, t.id, 'testimony-card', testimonyPool, 'testimony'));
+    shuffle([...testimonies]).forEach(t => createCard(t.text, t.id, 'testimony-card', testimonyPool, 'testimony'));
 
     const evidencePool = document.getElementById('evidence-unsorted-area');
-    evidences.forEach(e => createCard(e.text, e.id, 'evidence-card', evidencePool, 'evidence'));
+    shuffle([...evidences]).forEach(e => createCard(e.text, e.id, 'evidence-card', evidencePool, 'evidence'));
 
     const locationPool = document.getElementById('location-unsorted-area');
-    locations.forEach(l => createCard(l.text, l.id, 'location-card', locationPool, 'location'));
+    shuffle([...locations]).forEach(l => createCard(l.text, l.id, 'location-card', locationPool, 'location'));
 
     // pool をクリックして選択解除
     document.querySelectorAll('.card-pool').forEach(pool => {

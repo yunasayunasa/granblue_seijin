@@ -447,6 +447,14 @@ function selectCard(card) {
     });
 }
 
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 function swapCards(cardA, cardB) {
     if (cardA.dataset.type !== cardB.dataset.type) { selectCard(cardB); return; }
     const tlA = cardA.dataset.timeline;
@@ -692,9 +700,9 @@ function init() {
     const testimonyPool = document.getElementById('testimony-unsorted-area');
     const evidencePool  = document.getElementById('evidence-unsorted-area');
 
-    persons.forEach(p    => createCard(p.text, p.id, p.timeline === 'A' ? 'person-card-a' : 'person-card-b',         personPool,    'person',    p.timeline));
-    testimonies.forEach(t => createCard(t.text, t.id, t.timeline === 'A' ? 'testimony-card-a' : 'testimony-card-b', testimonyPool, 'testimony', t.timeline));
-    evidences.forEach(e   => createCard(e.text, e.id, e.timeline === 'A' ? 'evidence-card-a' : 'evidence-card-b',   evidencePool,  'evidence',  e.timeline));
+    shuffle([...persons]).forEach(p    => createCard(p.text, p.id, p.timeline === 'A' ? 'person-card-a' : 'person-card-b',         personPool,    'person',    p.timeline));
+    shuffle([...testimonies]).forEach(t => createCard(t.text, t.id, t.timeline === 'A' ? 'testimony-card-a' : 'testimony-card-b', testimonyPool, 'testimony', t.timeline));
+    shuffle([...evidences]).forEach(e   => createCard(e.text, e.id, e.timeline === 'A' ? 'evidence-card-a' : 'evidence-card-b',   evidencePool,  'evidence',  e.timeline));
 
     document.querySelectorAll('.card-pool').forEach(pool => {
         pool.addEventListener('click', (e) => { if (e.target === pool) deselect(); });
